@@ -126,76 +126,111 @@ export function TraderSignOffGrid({ books, onBookClick, onUpdateBook, traderName
                 </td>
                 {workingDays.map((day) => {
                   const signOff = book.signOffs.find((s) => s.date === day);
-                  const isPending = signOff?.status === 'pending';
+                  const status = signOff?.status || 'none';
                   const popoverKey = getPopoverKey(book.id, day);
                   const commentsForDate = book.comments.filter(c => c.date === day);
 
                   return (
                     <td key={day} className="px-4 py-3 text-center">
-                      {isPending ? (
-                        <Popover 
-                          open={openPopover === popoverKey} 
-                          onOpenChange={(open) => {
-                            setOpenPopover(open ? popoverKey : null);
-                            if (!open) setComment('');
-                          }}
-                        >
-                          <PopoverTrigger asChild>
-                            <button 
-                              className="inline-flex items-center gap-1 rounded-full border-2 border-dashed border-warning/50 bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning hover:border-warning hover:bg-warning/20 transition-all"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <span className="relative flex h-2 w-2">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-75"></span>
-                                <span className="relative inline-flex h-2 w-2 rounded-full bg-warning"></span>
+                      <Popover 
+                        open={openPopover === popoverKey} 
+                        onOpenChange={(open) => {
+                          setOpenPopover(open ? popoverKey : null);
+                          if (!open) setComment('');
+                        }}
+                      >
+                        <PopoverTrigger asChild>
+                          <button 
+                            className="relative inline-flex cursor-pointer transition-transform hover:scale-105"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {status === 'pending' ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border-2 border-dashed border-warning/50 bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning hover:border-warning hover:bg-warning/20 transition-all">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-75"></span>
+                                  <span className="relative inline-flex h-2 w-2 rounded-full bg-warning"></span>
+                                </span>
+                                Pending
                               </span>
-                              Pending
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-72 p-0" align="center" onClick={(e) => e.stopPropagation()}>
-                            <div className="p-3 border-b border-border">
-                              <p className="font-medium text-foreground text-sm">{book.name}</p>
+                            ) : status === 'signed' ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-1 text-xs font-medium text-success ring-1 ring-success/20 hover:ring-success/40 transition-all">
+                                <Check className="h-3 w-3" />
+                                Signed
+                              </span>
+                            ) : status === 'rejected' ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive ring-1 ring-destructive/20 hover:ring-destructive/40 transition-all">
+                                <X className="h-3 w-3" />
+                                Rejected
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-border hover:ring-muted-foreground/40 transition-all">
+                                No Report
+                              </span>
+                            )}
+                            {commentsForDate.length > 0 && (
+                              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                                {commentsForDate.length}
+                              </span>
+                            )}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-72 p-0" align="center" onClick={(e) => e.stopPropagation()}>
+                          <div className="p-3 border-b border-border">
+                            <p className="font-medium text-foreground text-sm">{book.name}</p>
+                            <div className="flex items-center gap-2 mt-1">
                               <p className="text-xs text-muted-foreground">{formatWorkingDay(day)}</p>
+                              {status !== 'pending' && status !== 'none' && (
+                                <Badge variant={status === 'signed' ? 'default' : 'destructive'} className="text-xs">
+                                  Currently: {status}
+                                </Badge>
+                              )}
                             </div>
-                            <div className="p-3 space-y-3">
-                              <Textarea
-                                placeholder="Add a comment (optional)..."
-                                value={comment}
-                                onChange={(e) => setComment(e.target.value)}
-                                className="min-h-[60px] text-sm"
-                              />
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  className="flex-1 gap-1"
-                                  onClick={() => handleSignOff(book, day, 'sign')}
-                                >
-                                  <Check className="h-4 w-4" />
-                                  Sign Off
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="flex-1 gap-1"
-                                  onClick={() => handleSignOff(book, day, 'reject')}
-                                >
-                                  <X className="h-4 w-4" />
-                                  Reject
-                                </Button>
+                          </div>
+                          <div className="p-3 space-y-3">
+                            <Textarea
+                              placeholder="Add a comment (optional)..."
+                              value={comment}
+                              onChange={(e) => setComment(e.target.value)}
+                              className="min-h-[60px] text-sm"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                className="flex-1 gap-1"
+                                variant={status === 'signed' ? 'secondary' : 'default'}
+                                onClick={() => handleSignOff(book, day, 'sign')}
+                              >
+                                <Check className="h-4 w-4" />
+                                {status === 'signed' ? 'Update' : 'Sign Off'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="flex-1 gap-1"
+                                onClick={() => handleSignOff(book, day, 'reject')}
+                              >
+                                <X className="h-4 w-4" />
+                                Reject
+                              </Button>
+                            </div>
+                            {commentsForDate.length > 0 && (
+                              <div className="border-t border-border pt-3">
+                                <p className="text-xs font-medium text-muted-foreground mb-2">
+                                  Comments ({commentsForDate.length})
+                                </p>
+                                <div className="space-y-2 max-h-32 overflow-y-auto">
+                                  {commentsForDate.map(c => (
+                                    <div key={c.id} className="text-xs bg-muted/50 rounded p-2">
+                                      <span className="font-medium">{c.authorName}</span>
+                                      <p className="text-muted-foreground mt-0.5">{c.content}</p>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      ) : (
-                        <div className="relative inline-block">
-                          <StatusBadge status={signOff?.status || 'none'} />
-                          {commentsForDate.length > 0 && (
-                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                              {commentsForDate.length}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </td>
                   );
                 })}
