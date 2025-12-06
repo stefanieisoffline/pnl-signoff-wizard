@@ -7,6 +7,7 @@ import { BookDetailPanel } from './BookDetailPanel';
 import { FilterBar } from './FilterBar';
 import { CommentsSummary } from './CommentsSummary';
 import { ReminderControls } from './ReminderControls';
+import { DateRangeSelector } from './DateRangeSelector';
 import { BookOpen, CheckCircle, AlertTriangle, XCircle, MessageSquare } from 'lucide-react';
 
 export function Dashboard() {
@@ -16,8 +17,9 @@ export function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDesk, setSelectedDesk] = useState('all');
   const [showRetired, setShowRetired] = useState(false);
+  const [daysToShow, setDaysToShow] = useState(5);
 
-  const workingDays = getLastWorkingDays(5);
+  const workingDays = getLastWorkingDays(daysToShow);
 
   // Filter books owned by current user
   const myBooks = useMemo(() => {
@@ -85,7 +87,7 @@ export function Dashboard() {
             Welcome back, {currentUser.name.split(' ')[0]}
           </h2>
           <p className="mt-1 text-muted-foreground">
-            Here's an overview of your P&L report sign-offs for the last 5 working days.
+            Here's an overview of your P&L report sign-offs for the last {daysToShow} working days.
           </p>
         </div>
 
@@ -152,11 +154,14 @@ export function Dashboard() {
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-foreground">P&L Reports</h3>
-            <span className="text-sm text-muted-foreground">
-              Showing {filteredBooks.length} of {myBooks.length} books
-            </span>
+            <div className="flex items-center gap-4">
+              <DateRangeSelector value={daysToShow} onChange={setDaysToShow} />
+              <span className="text-sm text-muted-foreground">
+                Showing {filteredBooks.length} of {myBooks.length} books
+              </span>
+            </div>
           </div>
-          <SignOffGrid books={filteredBooks} onBookClick={handleBookClick} />
+          <SignOffGrid books={filteredBooks} onBookClick={handleBookClick} daysToShow={daysToShow} />
         </div>
 
         {/* Empty State */}

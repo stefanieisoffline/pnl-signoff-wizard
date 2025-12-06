@@ -5,6 +5,7 @@ import { StatsCard } from './StatsCard';
 import { TraderSignOffGrid } from './TraderSignOffGrid';
 import { TraderBookDetailPanel } from './TraderBookDetailPanel';
 import { FilterBar } from './FilterBar';
+import { DateRangeSelector } from './DateRangeSelector';
 import { BookOpen, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -22,8 +23,9 @@ export function TraderDashboard() {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDesk, setSelectedDesk] = useState('all');
+  const [daysToShow, setDaysToShow] = useState(5);
 
-  const workingDays = getLastWorkingDays(5);
+  const workingDays = getLastWorkingDays(daysToShow);
 
   // Filter books where current trader is primary trader, secondary trader, or desk head
   const myBooks = useMemo(() => {
@@ -123,7 +125,7 @@ export function TraderDashboard() {
               Welcome back, {traderUser.name.split(' ')[0]}
             </h2>
             <p className="mt-1 text-muted-foreground">
-              Review and sign off your P&L reports for the last 5 working days.
+              Review and sign off your P&L reports for the last {daysToShow} working days.
             </p>
           </div>
           {stats.pendingToday > 0 && (
@@ -182,15 +184,19 @@ export function TraderDashboard() {
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-foreground">My P&L Reports</h3>
-            <span className="text-sm text-muted-foreground">
-              Showing {filteredBooks.length} of {myBooks.filter(b => !b.isRetired).length} books
-            </span>
+            <div className="flex items-center gap-4">
+              <DateRangeSelector value={daysToShow} onChange={setDaysToShow} />
+              <span className="text-sm text-muted-foreground">
+                Showing {filteredBooks.length} of {myBooks.filter(b => !b.isRetired).length} books
+              </span>
+            </div>
           </div>
           <TraderSignOffGrid 
             books={filteredBooks} 
             onBookClick={setSelectedBook}
             onUpdateBook={handleUpdateBook}
             traderName={traderUser.name}
+            daysToShow={daysToShow}
           />
         </div>
 

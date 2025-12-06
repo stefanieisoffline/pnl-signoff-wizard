@@ -13,10 +13,11 @@ interface TraderSignOffGridProps {
   onBookClick: (book: Book) => void;
   onUpdateBook: (book: Book) => void;
   traderName: string;
+  daysToShow?: number;
 }
 
-export function TraderSignOffGrid({ books, onBookClick, onUpdateBook, traderName }: TraderSignOffGridProps) {
-  const workingDays = getLastWorkingDays(5);
+export function TraderSignOffGrid({ books, onBookClick, onUpdateBook, traderName, daysToShow = 5 }: TraderSignOffGridProps) {
+  const workingDays = getLastWorkingDays(daysToShow);
   const [openPopover, setOpenPopover] = useState<string | null>(null);
   const [comment, setComment] = useState('');
 
