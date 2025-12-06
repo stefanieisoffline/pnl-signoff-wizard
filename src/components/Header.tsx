@@ -1,9 +1,27 @@
-import { Bell, Settings, User } from 'lucide-react';
+import { Bell, Settings, User, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { currentUser } from '@/lib/mockData';
 import { NavLink } from '@/components/NavLink';
+import { useRole } from '@/contexts/RoleContext';
+import { useNavigate } from 'react-router-dom';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from './ui/badge';
 
 export function Header() {
+  const { currentRole, setCurrentRole, activeUser } = useRole();
+  const navigate = useNavigate();
+
+  const handleRoleSwitch = (role: 'product_controller' | 'trader') => {
+    setCurrentRole(role);
+    navigate(role === 'product_controller' ? '/' : '/trader');
+  };
+
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="flex h-16 items-center justify-between px-6">
@@ -19,27 +37,32 @@ export function Header() {
           </div>
 
           <nav className="flex items-center gap-1">
-            <NavLink
-              to="/"
-              className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
-              activeClassName="text-foreground bg-muted"
-            >
-              Dashboard
-            </NavLink>
-            <NavLink
-              to="/trader"
-              className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
-              activeClassName="text-foreground bg-muted"
-            >
-              Trader View
-            </NavLink>
-            <NavLink
-              to="/books"
-              className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
-              activeClassName="text-foreground bg-muted"
-            >
-              Book List
-            </NavLink>
+            {currentRole === 'product_controller' ? (
+              <>
+                <NavLink
+                  to="/"
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
+                  activeClassName="text-foreground bg-muted"
+                >
+                  Dashboard
+                </NavLink>
+                <NavLink
+                  to="/books"
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
+                  activeClassName="text-foreground bg-muted"
+                >
+                  Book List
+                </NavLink>
+              </>
+            ) : (
+              <NavLink
+                to="/trader"
+                className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
+                activeClassName="text-foreground bg-muted"
+              >
+                My Reports
+              </NavLink>
+            )}
           </nav>
         </div>
 
@@ -53,16 +76,48 @@ export function Header() {
           <Button variant="ghost" size="icon">
             <Settings className="h-5 w-5" />
           </Button>
+          
           <div className="flex items-center gap-3 border-l border-border pl-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-foreground">{currentUser.name}</p>
-              <p className="text-xs text-muted-foreground capitalize">
-                {currentUser.role.replace('_', ' ')}
-              </p>
-            </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
-              <User className="h-5 w-5" />
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50">
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-foreground">{activeUser.name}</p>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        {currentRole === 'product_controller' ? 'PC' : 'Trader'}
+                      </Badge>
+                      <ArrowLeftRight className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+                    <User className="h-5 w-5" />
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleRoleSwitch('product_controller')}
+                  className={currentRole === 'product_controller' ? 'bg-muted' : ''}
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">Product Controller</span>
+                    <span className="text-xs text-muted-foreground">Veronika Yastrebova</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleRoleSwitch('trader')}
+                  className={currentRole === 'trader' ? 'bg-muted' : ''}
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">Trader</span>
+                    <span className="text-xs text-muted-foreground">Robert Allan</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
