@@ -11,6 +11,7 @@ import { BookOpen, CheckCircle, AlertTriangle, XCircle, MessageSquare } from 'lu
 export function Dashboard() {
   const [books, setBooks] = useState<Book[]>(mockBooks);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDesk, setSelectedDesk] = useState('all');
   const [showRetired, setShowRetired] = useState(false);
@@ -60,6 +61,16 @@ export function Dashboard() {
   const handleUpdateBook = (updatedBook: Book) => {
     setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b));
     setSelectedBook(updatedBook);
+  };
+
+  const handleBookClick = (book: Book, date?: string) => {
+    setSelectedBook(book);
+    setSelectedDate(date || null);
+  };
+
+  const handleClosePanel = () => {
+    setSelectedBook(null);
+    setSelectedDate(null);
   };
 
   return (
@@ -115,7 +126,11 @@ export function Dashboard() {
         </div>
 
         {/* Comments Summary */}
-        <CommentsSummary books={myBooks} onBookClick={setSelectedBook} />
+        <CommentsSummary 
+          books={myBooks} 
+          onBookClick={handleBookClick} 
+          onUpdateBook={handleUpdateBook}
+        />
 
         {/* Filter Bar */}
         <div className="mb-6">
@@ -137,7 +152,7 @@ export function Dashboard() {
               Showing {filteredBooks.length} of {myBooks.length} books
             </span>
           </div>
-          <SignOffGrid books={filteredBooks} onBookClick={setSelectedBook} />
+          <SignOffGrid books={filteredBooks} onBookClick={handleBookClick} />
         </div>
 
         {/* Empty State */}
@@ -156,8 +171,9 @@ export function Dashboard() {
       <BookDetailPanel
         book={selectedBook}
         open={!!selectedBook}
-        onClose={() => setSelectedBook(null)}
+        onClose={handleClosePanel}
         onUpdateBook={handleUpdateBook}
+        selectedDate={selectedDate}
       />
     </div>
   );
