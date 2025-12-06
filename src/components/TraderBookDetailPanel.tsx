@@ -232,8 +232,6 @@ export function TraderBookDetailPanel({ book, open, onClose, onUpdateBook, trade
               currentUserName={traderName}
               currentUserRole={getTraderRole()}
               onUpdateBook={onUpdateBook}
-              canAddComment={true}
-              canReply={false}
               availableDates={workingDays}
             />
           </TabsContent>

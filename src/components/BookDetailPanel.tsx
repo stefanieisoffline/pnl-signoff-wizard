@@ -219,8 +219,6 @@ export function BookDetailPanel({ book, open, onClose, onUpdateBook }: BookDetai
               currentUserName={currentUser.name}
               currentUserRole="product_controller"
               onUpdateBook={onUpdateBook}
-              canAddComment={false}
-              canReply={true}
               availableDates={workingDays}
             />
           </TabsContent>
