@@ -78,7 +78,6 @@ export function TraderDashboard() {
   };
 
   const handleSignAllPending = () => {
-    const today = workingDays[0];
     let signedCount = 0;
 
     // Get all book IDs that belong to this trader
@@ -89,19 +88,28 @@ export function TraderDashboard() {
       if (!myBookIds.has(book.id)) {
         return book;
       }
-      const todaySignOff = book.signOffs.find(s => s.date === today);
-      if (todaySignOff?.status === 'pending') {
-        signedCount++;
-        return {
-          ...book,
-          signOffs: book.signOffs.map(s =>
-            s.date === today
-              ? { ...s, status: 'signed' as const, signedBy: activeUser.name, signedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) }
-              : s
-          ),
-        };
+      
+      // Check if any sign-offs are pending
+      const hasPending = book.signOffs.some(s => s.status === 'pending');
+      if (!hasPending) {
+        return book;
       }
-      return book;
+
+      // Sign off ALL pending reports for this book (not just today)
+      const updatedSignOffs = book.signOffs.map(s => {
+        if (s.status === 'pending') {
+          signedCount++;
+          return {
+            ...s,
+            status: 'signed' as const,
+            signedBy: activeUser.name,
+            signedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          };
+        }
+        return s;
+      });
+
+      return { ...book, signOffs: updatedSignOffs };
     });
 
     setBooks(updatedBooks);
