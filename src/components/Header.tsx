@@ -1,7 +1,7 @@
 import { Settings, User, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NavLink } from '@/components/NavLink';
-import { useRole } from '@/contexts/RoleContext';
+import { useRole, productControllers } from '@/contexts/RoleContext';
 import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
@@ -15,11 +15,14 @@ import { Badge } from './ui/badge';
 import { NotificationBell } from './NotificationBell';
 
 export function Header() {
-  const { currentRole, setCurrentRole, activeUser } = useRole();
+  const { currentRole, setCurrentRole, activeUser, selectedPCIndex, setSelectedPCIndex } = useRole();
   const navigate = useNavigate();
 
-  const handleRoleSwitch = (role: 'product_controller' | 'trader') => {
+  const handleRoleSwitch = (role: 'product_controller' | 'trader', pcIndex?: number) => {
     setCurrentRole(role);
+    if (role === 'product_controller' && pcIndex !== undefined) {
+      setSelectedPCIndex(pcIndex);
+    }
     navigate(role === 'product_controller' ? '/' : '/trader');
   };
 
@@ -71,7 +74,7 @@ export function Header() {
           <NotificationBell 
             userEmail={currentRole === 'trader' 
               ? 'robert.allan@sefe-energy.com' 
-              : 'veronika.yastrebova@sefe-energy.com'
+              : activeUser.email
             } 
           />
           <Button variant="ghost" size="icon">
@@ -97,24 +100,30 @@ export function Header() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Switch Role</DropdownMenuLabel>
+                <DropdownMenuLabel>Product Controllers</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => handleRoleSwitch('product_controller')}
-                  className={currentRole === 'product_controller' ? 'bg-muted' : ''}
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium">Product Controller</span>
-                    <span className="text-xs text-muted-foreground">Veronika Yastrebova</span>
-                  </div>
-                </DropdownMenuItem>
+                {productControllers.map((pc, index) => (
+                  <DropdownMenuItem
+                    key={pc.id}
+                    onClick={() => handleRoleSwitch('product_controller', index)}
+                    className={currentRole === 'product_controller' && selectedPCIndex === index ? 'bg-muted' : ''}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{pc.name}</span>
+                      <span className="text-xs text-muted-foreground">{pc.email}</span>
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Trader</DropdownMenuLabel>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => handleRoleSwitch('trader')}
                   className={currentRole === 'trader' ? 'bg-muted' : ''}
                 >
                   <div className="flex flex-col">
-                    <span className="font-medium">Trader</span>
-                    <span className="text-xs text-muted-foreground">Robert Allan</span>
+                    <span className="font-medium">Robert Allan</span>
+                    <span className="text-xs text-muted-foreground">robert.allan@sefe.eu</span>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
