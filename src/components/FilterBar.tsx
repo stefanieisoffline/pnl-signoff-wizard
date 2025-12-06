@@ -11,6 +11,7 @@ interface FilterBarProps {
   onDeskChange: (desk: string) => void;
   showRetired: boolean;
   onShowRetiredChange: (show: boolean) => void;
+  hideRetiredToggle?: boolean;
 }
 
 export function FilterBar({
@@ -20,6 +21,7 @@ export function FilterBar({
   onDeskChange,
   showRetired,
   onShowRetiredChange,
+  hideRetiredToggle = false,
 }: FilterBarProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -48,14 +50,16 @@ export function FilterBar({
         </SelectContent>
       </Select>
 
-      <Button
-        variant={showRetired ? 'secondary' : 'outline'}
-        onClick={() => onShowRetiredChange(!showRetired)}
-        className="gap-2"
-      >
-        <SlidersHorizontal className="h-4 w-4" />
-        {showRetired ? 'Hide Retired' : 'Show Retired'}
-      </Button>
+      {!hideRetiredToggle && (
+        <Button
+          variant={showRetired ? 'secondary' : 'outline'}
+          onClick={() => onShowRetiredChange(!showRetired)}
+          className="gap-2"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          {showRetired ? 'Hide Retired' : 'Show Retired'}
+        </Button>
+      )}
     </div>
   );
 }

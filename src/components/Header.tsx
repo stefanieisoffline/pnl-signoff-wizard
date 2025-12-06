@@ -27,6 +27,13 @@ export function Header() {
               Dashboard
             </NavLink>
             <NavLink
+              to="/trader"
+              className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
+              activeClassName="text-foreground bg-muted"
+            >
+              Trader View
+            </NavLink>
+            <NavLink
               to="/books"
               className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
               activeClassName="text-foreground bg-muted"
