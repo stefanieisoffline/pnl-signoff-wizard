@@ -81,20 +81,6 @@ export function TraderDashboard() {
     setSelectedBook(updatedBook);
   };
 
-  const handleQuickSignOff = (book: Book, date: string) => {
-    const updatedSignOffs = book.signOffs.map(s => 
-      s.date === date 
-        ? { ...s, status: 'signed' as const, signedBy: traderUser.name, signedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) }
-        : s
-    );
-    const updatedBook = { ...book, signOffs: updatedSignOffs };
-    handleUpdateBook(updatedBook);
-    toast({
-      title: "Report Signed",
-      description: `${book.name} signed off successfully.`,
-    });
-  };
-
   const handleSignAllPending = () => {
     const today = workingDays[0];
     let signedCount = 0;
@@ -203,7 +189,7 @@ export function TraderDashboard() {
           <TraderSignOffGrid 
             books={filteredBooks} 
             onBookClick={setSelectedBook}
-            onQuickSignOff={handleQuickSignOff}
+            onUpdateBook={handleUpdateBook}
             traderName={traderUser.name}
           />
         </div>
