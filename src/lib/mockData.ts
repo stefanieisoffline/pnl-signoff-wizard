@@ -244,6 +244,44 @@ const bookData = [
   { name: "ZTP WD BALANCING", primaryTrader: "Robert Allan", secondaryTrader: "Mark Prenty", deskHead: "Ed Humphreys", desk: "Gas & Hub", productController: "Ruslan Markov" },
 ];
 
+const workingDaysForComments = getLastWorkingDays(5);
+
+// Generate sample comments for some books
+const generateSampleComments = (bookId: string, bookName: string, primaryTrader: string, deskHead: string): BookComment[] => {
+  const shouldHaveComments = Math.random() > 0.7; // 30% of books have comments
+  if (!shouldHaveComments) return [];
+
+  const comments: BookComment[] = [];
+  const numComments = Math.floor(Math.random() * 3) + 1;
+
+  const sampleMessages = [
+    "Please review the variance on this report",
+    "P&L figures look unusual for this period",
+    "Need clarification on the hedge positions",
+    "Waiting for updated market data",
+    "Position reconciliation pending",
+    "Query on the MTM calculation",
+  ];
+
+  for (let i = 0; i < numComments; i++) {
+    const isFromDeskHead = Math.random() > 0.7;
+    const hoursAgo = Math.floor(Math.random() * 48);
+    const createdAt = new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString();
+    
+    comments.push({
+      id: `comment-${bookId}-${i}`,
+      bookId,
+      date: workingDaysForComments[Math.floor(Math.random() * workingDaysForComments.length)],
+      authorName: isFromDeskHead ? deskHead : primaryTrader,
+      authorRole: isFromDeskHead ? 'desk_head' : 'trader',
+      content: sampleMessages[Math.floor(Math.random() * sampleMessages.length)],
+      createdAt,
+    });
+  }
+
+  return comments;
+};
+
 export const mockBooks: Book[] = bookData.map((book, index) => ({
   id: String(index + 1),
   name: book.name,
@@ -254,7 +292,7 @@ export const mockBooks: Book[] = bookData.map((book, index) => ({
   productController: book.productController,
   isRetired: false,
   signOffs: generateRandomSignOffs(),
-  comments: [],
+  comments: generateSampleComments(String(index + 1), book.name, book.primaryTrader, book.deskHead),
 }));
 
 // Extract unique product controllers from book data
