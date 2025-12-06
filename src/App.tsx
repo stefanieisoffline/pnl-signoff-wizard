@@ -7,6 +7,7 @@ import { RoleProvider } from "./contexts/RoleContext";
 import Index from "./pages/Index";
 import Books from "./pages/Books";
 import Trader from "./pages/Trader";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ const App = () => (
       <BrowserRouter>
         <RoleProvider>
           <Routes>
+            <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<Index />} />
             <Route path="/books" element={<Books />} />
             <Route path="/trader" element={<Trader />} />
