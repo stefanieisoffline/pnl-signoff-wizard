@@ -11,7 +11,7 @@ import {
 
 interface SignOffGridProps {
   books: Book[];
-  onBookClick: (book: Book) => void;
+  onBookClick: (book: Book, selectedDate?: string) => void;
 }
 
 export function SignOffGrid({ books, onBookClick }: SignOffGridProps) {
@@ -46,14 +46,16 @@ export function SignOffGrid({ books, onBookClick }: SignOffGridProps) {
               return (
                 <tr
                   key={book.id}
-                  onClick={() => onBookClick(book)}
                   className={cn(
-                    'cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/20',
+                    'border-b border-border/50 transition-colors hover:bg-muted/20',
                     book.isRetired && 'opacity-50'
                   )}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <td className="sticky left-0 z-10 bg-card px-4 py-3">
+                  <td 
+                    className="sticky left-0 z-10 bg-card px-4 py-3 cursor-pointer"
+                    onClick={() => onBookClick(book)}
+                  >
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-foreground">{book.name}</span>
                       {book.isRetired && (
@@ -69,7 +71,10 @@ export function SignOffGrid({ books, onBookClick }: SignOffGridProps) {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                  <td 
+                    className="px-4 py-3 text-sm text-muted-foreground cursor-pointer"
+                    onClick={() => onBookClick(book)}
+                  >
                     {book.desk}
                   </td>
                   {workingDays.map((day) => {
@@ -78,19 +83,40 @@ export function SignOffGrid({ books, onBookClick }: SignOffGridProps) {
                     
                     return (
                       <td key={day} className="px-3 py-3 text-center">
-                        <div className="relative inline-flex justify-center">
-                          <StatusBadge status={signOff?.status || 'none'} size="sm" />
-                          {commentsForDate.length > 0 && (
-                            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] text-primary-foreground">
-                              {commentsForDate.length}
-                            </span>
-                          )}
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div 
+                              className="relative inline-flex justify-center cursor-pointer group"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onBookClick(book, day);
+                              }}
+                            >
+                              <div className="transition-transform group-hover:scale-110">
+                                <StatusBadge status={signOff?.status || 'none'} size="sm" />
+                              </div>
+                              {commentsForDate.length > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] text-primary-foreground">
+                                  {commentsForDate.length}
+                                </span>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{formatWorkingDay(day)}</p>
+                            {commentsForDate.length > 0 && (
+                              <p className="text-xs text-muted-foreground">
+                                {commentsForDate.length} comment{commentsForDate.length > 1 ? 's' : ''}
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">Click to view</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </td>
                     );
                   })}
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col gap-1.5">
+                  <td className="px-4 py-3" onClick={() => onBookClick(book)}>
+                    <div className="flex flex-col gap-1.5 cursor-pointer">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className="flex items-center gap-1.5 text-sm">

@@ -1,15 +1,23 @@
-import { useMemo } from 'react';
-import { Book, BookComment, formatWorkingDay } from '@/lib/mockData';
+import { useState, useMemo } from 'react';
+import { Book, BookComment, formatWorkingDay, currentUser } from '@/lib/mockData';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Textarea } from './ui/textarea';
 import { ScrollArea } from './ui/scroll-area';
-import { MessageSquare, User, Calendar, ChevronRight } from 'lucide-react';
+import { MessageSquare, User, Calendar, ChevronRight, Reply, Send, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 interface CommentsSummaryProps {
   books: Book[];
-  onBookClick: (book: Book) => void;
+  onBookClick: (book: Book, selectedDate?: string) => void;
+  onUpdateBook?: (book: Book) => void;
 }
 
-export function CommentsSummary({ books, onBookClick }: CommentsSummaryProps) {
+export function CommentsSummary({ books, onBookClick, onUpdateBook }: CommentsSummaryProps) {
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+
   // Get all comments from all books, sorted by date
   const allComments = useMemo(() => {
     const comments: (BookComment & { bookName: string; book: Book })[] = [];
@@ -24,10 +32,10 @@ export function CommentsSummary({ books, onBookClick }: CommentsSummaryProps) {
       });
     });
 
-    // Sort by createdAt descending (newest first)
-    return comments.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    // Sort by createdAt descending (newest first), only get top-level comments
+    return comments
+      .filter(c => !c.parentId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [books]);
 
   // Get unique books with comments
@@ -60,7 +68,7 @@ export function CommentsSummary({ books, onBookClick }: CommentsSummaryProps) {
     
     if (diffHours < 1) {
       const diffMins = Math.floor(diffMs / (1000 * 60));
-      return `${diffMins}m ago`;
+      return diffMins <= 1 ? 'Just now' : `${diffMins}m ago`;
     } else if (diffHours < 24) {
       return `${Math.floor(diffHours)}h ago`;
     } else {
@@ -71,7 +79,7 @@ export function CommentsSummary({ books, onBookClick }: CommentsSummaryProps) {
     }
   };
 
-  const getRoleBadgeVariant = (role: string) => {
+  const getRoleBadgeVariant = (role: string): "default" | "secondary" | "outline" => {
     switch (role) {
       case 'product_controller':
         return 'default';
@@ -97,6 +105,51 @@ export function CommentsSummary({ books, onBookClick }: CommentsSummaryProps) {
     }
   };
 
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'product_controller':
+        return 'bg-primary/10 text-primary';
+      case 'trader':
+        return 'bg-blue-500/10 text-blue-600';
+      case 'desk_head':
+        return 'bg-amber-500/10 text-amber-600';
+      default:
+        return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const handleReply = (comment: BookComment & { bookName: string; book: Book }) => {
+    if (!replyContent.trim() || !onUpdateBook) return;
+
+    const reply: BookComment = {
+      id: `comment-${Date.now()}`,
+      bookId: comment.book.id,
+      date: comment.date,
+      authorName: currentUser.name,
+      authorRole: 'product_controller',
+      content: replyContent.trim(),
+      createdAt: new Date().toISOString(),
+      parentId: comment.id,
+    };
+
+    const updatedBook = {
+      ...comment.book,
+      comments: [...comment.book.comments, reply],
+    };
+
+    onUpdateBook(updatedBook);
+    setReplyContent('');
+    setReplyingTo(null);
+    toast({
+      title: 'Reply Sent',
+      description: `Reply posted on ${comment.bookName}.`,
+    });
+  };
+
+  const getReplies = (commentId: string, book: Book) => {
+    return book.comments.filter(c => c.parentId === commentId);
+  };
+
   if (allComments.length === 0) {
     return null;
   }
@@ -116,52 +169,159 @@ export function CommentsSummary({ books, onBookClick }: CommentsSummaryProps) {
         </span>
       </div>
       
-      <ScrollArea className="max-h-64">
+      <ScrollArea className="h-80">
         <div className="divide-y divide-border">
-          {allComments.slice(0, 10).map((comment) => (
-            <div 
-              key={comment.id}
-              className="flex items-start gap-3 p-3 hover:bg-muted/20 cursor-pointer transition-colors"
-              onClick={() => onBookClick(comment.book)}
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <User className="h-4 w-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium text-foreground">
-                    {comment.authorName}
-                  </span>
-                  <Badge variant={getRoleBadgeVariant(comment.authorRole)} className="text-[10px] px-1.5 py-0">
-                    {getRoleLabel(comment.authorRole)}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDateTime(comment.createdAt)}
-                  </span>
+          {allComments.map((comment) => {
+            const replies = getReplies(comment.id, comment.book);
+            const isReplying = replyingTo === comment.id;
+            
+            return (
+              <div key={comment.id} className="p-3 hover:bg-muted/10 transition-colors">
+                <div 
+                  className="flex items-start gap-3 cursor-pointer"
+                  onClick={() => onBookClick(comment.book, comment.date)}
+                >
+                  <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", getRoleColor(comment.authorRole))}>
+                    <User className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-foreground">
+                        {comment.authorName}
+                      </span>
+                      <Badge variant={getRoleBadgeVariant(comment.authorRole)} className="text-[10px] px-1.5 py-0">
+                        {getRoleLabel(comment.authorRole)}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDateTime(comment.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-foreground mt-1">
+                      {comment.content}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="outline" className="text-[10px] gap-1">
+                        <Calendar className="h-2.5 w-2.5" />
+                        {formatWorkingDay(comment.date)}
+                      </Badge>
+                      <span className="text-xs text-primary font-medium flex items-center gap-0.5">
+                        {comment.bookName}
+                        <ChevronRight className="h-3 w-3" />
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">
-                  {comment.content}
-                </p>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <Badge variant="outline" className="text-[10px] gap-1">
-                    <Calendar className="h-2.5 w-2.5" />
-                    {formatWorkingDay(comment.date)}
-                  </Badge>
-                  <span className="text-xs text-primary font-medium flex items-center gap-0.5">
-                    {comment.bookName}
-                    <ChevronRight className="h-3 w-3" />
-                  </span>
-                </div>
+
+                {/* Replies preview */}
+                {replies.length > 0 && (
+                  <div className="ml-11 mt-2 space-y-2 border-l-2 border-border pl-3">
+                    {replies.slice(0, 2).map((reply) => (
+                      <div key={reply.id} className="flex items-start gap-2">
+                        <div className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-full", getRoleColor(reply.authorRole))}>
+                          <User className="h-2.5 w-2.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium text-foreground">
+                              {reply.authorName}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {formatDateTime(reply.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {reply.content}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {replies.length > 2 && (
+                      <button 
+                        className="text-xs text-primary hover:underline ml-7"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onBookClick(comment.book, comment.date);
+                        }}
+                      >
+                        +{replies.length - 2} more replies
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Reply action */}
+                {onUpdateBook && !isReplying && (
+                  <div className="ml-11 mt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReplyingTo(comment.id);
+                      }}
+                    >
+                      <Reply className="h-3 w-3" />
+                      Reply
+                    </Button>
+                  </div>
+                )}
+
+                {/* Inline reply form */}
+                {isReplying && (
+                  <div 
+                    className="ml-11 mt-3 space-y-2 animate-in slide-in-from-top-2 duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={cn("flex h-5 w-5 items-center justify-center rounded-full", getRoleColor('product_controller'))}>
+                        <User className="h-2.5 w-2.5" />
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Replying to {comment.authorName}
+                      </span>
+                    </div>
+                    <Textarea
+                      placeholder="Write a reply..."
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      className="min-h-[60px] text-sm"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleReply(comment)}
+                        disabled={!replyContent.trim()}
+                        size="sm"
+                        className="gap-1.5"
+                      >
+                        <Send className="h-3 w-3" />
+                        Send
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setReplyingTo(null);
+                          setReplyContent('');
+                        }}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </ScrollArea>
       
-      {allComments.length > 10 && (
+      {allComments.length > 15 && (
         <div className="border-t border-border bg-muted/20 px-4 py-2 text-center">
           <span className="text-xs text-muted-foreground">
-            Showing 10 of {allComments.length} comments
+            Scroll to see more comments
           </span>
         </div>
       )}
