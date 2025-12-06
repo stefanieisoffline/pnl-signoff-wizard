@@ -16,6 +16,15 @@ export const productControllers: RoleUser[] = [
   { id: 'pc-2', name: 'Stefanie Shi', email: 'stefanie.shi@sefe.eu', role: 'product_controller' },
   { id: 'pc-3', name: 'James Thomas', email: 'james.thomas@sefe.eu', role: 'product_controller' },
   { id: 'pc-4', name: 'Kelly Lim', email: 'kelly.lim@sefe.eu', role: 'product_controller' },
+  { id: 'pc-5', name: 'Ruslan Markov', email: 'ruslan.markov@sefe.eu', role: 'product_controller' },
+  { id: 'pc-6', name: 'Demi Comitis', email: 'demi.comitis@sefe.eu', role: 'product_controller' },
+  { id: 'pc-7', name: 'Khor Mei Leng', email: 'khor.meileng@sefe.eu', role: 'product_controller' },
+  { id: 'pc-8', name: 'Jorge Barbera', email: 'jorge.barbera@sefe.eu', role: 'product_controller' },
+  { id: 'pc-9', name: 'Lule Halimi', email: 'lule.halimi@sefe.eu', role: 'product_controller' },
+  { id: 'pc-10', name: 'Ero Kapatos', email: 'ero.kapatos@sefe.eu', role: 'product_controller' },
+  { id: 'pc-11', name: 'Vinny Sharma', email: 'vinny.sharma@sefe.eu', role: 'product_controller' },
+  { id: 'pc-12', name: 'Jasdeep Dhaliwal', email: 'jasdeep.dhaliwal@sefe.eu', role: 'product_controller' },
+  { id: 'pc-13', name: 'Jonas Koch', email: 'jonas.koch@sefe.eu', role: 'product_controller' },
 ];
 
 interface RoleContextType {
