@@ -6,8 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { BookComments } from './BookComments';
 import { Check, X, MessageSquare, Archive, UserCog, Clock, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { currentUser } from '@/lib/mockData';
 
 interface BookDetailPanelProps {
   book: Book | null;
@@ -73,9 +76,17 @@ export function BookDetailPanel({ book, open, onClose, onUpdateBook }: BookDetai
         </SheetHeader>
 
         <Tabs defaultValue="signoff" className="mt-6">
-          <TabsList className="grid w-full grid-cols-3 bg-muted/50">
+          <TabsList className="grid w-full grid-cols-4 bg-muted/50">
             <TabsTrigger value="signoff">Sign Off</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="comments" className="relative">
+              Comments
+              {book.comments.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 min-w-4 p-0 text-[10px]">
+                  {book.comments.length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="manage">Manage</TabsTrigger>
           </TabsList>
 
@@ -199,6 +210,17 @@ export function BookDetailPanel({ book, open, onClose, onUpdateBook }: BookDetai
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="comments" className="mt-4">
+            <BookComments
+              book={book}
+              currentUserName={currentUser.name}
+              currentUserRole="product_controller"
+              onUpdateBook={onUpdateBook}
+              canAddComment={false}
+              canReply={true}
+            />
           </TabsContent>
 
           <TabsContent value="manage" className="mt-4 space-y-4">

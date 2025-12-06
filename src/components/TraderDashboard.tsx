@@ -25,12 +25,13 @@ export function TraderDashboard() {
 
   const workingDays = getLastWorkingDays(5);
 
-  // Filter books where current trader is primary or secondary trader
+  // Filter books where current trader is primary trader, secondary trader, or desk head
   const myBooks = useMemo(() => {
     return books.filter(
       book => 
         book.primaryTrader === traderUser.name || 
-        book.secondaryTrader === traderUser.name
+        book.secondaryTrader === traderUser.name ||
+        book.deskHead === traderUser.name
     );
   }, [books]);
 
