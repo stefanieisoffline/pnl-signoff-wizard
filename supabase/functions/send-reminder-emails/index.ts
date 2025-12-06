@@ -77,6 +77,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     const results: Array<{ trader: string; status: string; error?: string }> = [];
 
+    // Add delay between emails to avoid rate limiting (2 req/s limit)
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
     for (const [traderName, reminder] of traderReminders) {
       try {
         const reportsList = reminder.pendingReports
@@ -160,6 +163,9 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         results.push({ trader: traderName, status: "sent" });
+        
+        // Wait 600ms between emails to stay under rate limit
+        await delay(600);
       } catch (emailError: any) {
         console.error(`Failed to send email to ${traderName}:`, emailError);
         
