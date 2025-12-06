@@ -70,8 +70,8 @@ export function formatWorkingDay(dateStr: string): string {
 const workingDays = getLastWorkingDays(10);
 
 const generateRandomSignOffs = (): SignOffRecord[] => {
-  const statuses: SignOffStatus[] = ['signed', 'pending', 'rejected', 'none'];
-  const weights = [0.6, 0.25, 0.1, 0.05]; // More signed than pending/rejected
+  const statuses: SignOffStatus[] = ['signed', 'pending', 'rejected'];
+  const weights = [0.65, 0.25, 0.1]; // More signed than pending/rejected, no "none" status
   
   return workingDays.map((date) => {
     const rand = Math.random();
