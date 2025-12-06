@@ -81,8 +81,12 @@ export function TraderDashboard() {
     const today = workingDays[0];
     let signedCount = 0;
 
+    // Get all book IDs that belong to this trader
+    const myBookIds = new Set(myBooks.map(b => b.id));
+
     const updatedBooks = books.map(book => {
-      if (book.primaryTrader !== activeUser.name && book.secondaryTrader !== activeUser.name) {
+      // Only process books that belong to this trader
+      if (!myBookIds.has(book.id)) {
         return book;
       }
       const todaySignOff = book.signOffs.find(s => s.date === today);
