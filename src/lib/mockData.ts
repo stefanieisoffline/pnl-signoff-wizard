@@ -66,7 +66,8 @@ export function formatWorkingDay(dateStr: string): string {
   });
 }
 
-const workingDays = getLastWorkingDays(5);
+// Generate sign-offs for 10 working days to support extended date range
+const workingDays = getLastWorkingDays(10);
 
 const generateRandomSignOffs = (): SignOffRecord[] => {
   const statuses: SignOffStatus[] = ['signed', 'pending', 'rejected', 'none'];

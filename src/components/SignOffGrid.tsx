@@ -12,10 +12,11 @@ import {
 interface SignOffGridProps {
   books: Book[];
   onBookClick: (book: Book, selectedDate?: string) => void;
+  daysToShow?: number;
 }
 
-export function SignOffGrid({ books, onBookClick }: SignOffGridProps) {
-  const workingDays = getLastWorkingDays(5);
+export function SignOffGrid({ books, onBookClick, daysToShow = 5 }: SignOffGridProps) {
+  const workingDays = getLastWorkingDays(daysToShow);
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
