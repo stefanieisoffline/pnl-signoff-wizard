@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Plus, Pencil, Archive, RotateCcw, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -199,21 +200,26 @@ export function BookListPage() {
         </Select>
       </div>
 
-      {/* Stats */}
-      <div className="flex gap-4 text-sm">
-        <div className="rounded-lg bg-muted/30 px-4 py-2">
-          <span className="text-muted-foreground">Total Books:</span>
-          <span className="ml-2 font-semibold text-foreground">{books.filter(b => !b.isRetired).length}</span>
-        </div>
-        <div className="rounded-lg bg-muted/30 px-4 py-2">
-          <span className="text-muted-foreground">Retired:</span>
-          <span className="ml-2 font-semibold text-foreground">{books.filter(b => b.isRetired).length}</span>
-        </div>
-        <div className="rounded-lg bg-muted/30 px-4 py-2">
-          <span className="text-muted-foreground">Desks:</span>
-          <span className="ml-2 font-semibold text-foreground">{desks.length}</span>
-        </div>
-      </div>
+      {/* Tabs for Active and Retired Books */}
+      <Tabs defaultValue="active" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="active" className="gap-2">
+            <Users className="h-4 w-4" />
+            Active Books
+            <Badge variant="secondary" className="ml-1 text-xs">
+              {filteredBooks.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="retired" className="gap-2">
+            <Archive className="h-4 w-4" />
+            Retired Books
+            <Badge variant="outline" className="ml-1 text-xs">
+              {retiredBooks.length}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active" className="space-y-6">
 
       {/* Tables by Desk */}
       {Object.entries(groupedByDesk).map(([desk, deskBooks]) => (
@@ -319,96 +325,108 @@ export function BookListPage() {
         </div>
       ))}
 
-      {filteredBooks.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-16">
-          <Users className="h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-medium text-foreground">No active books found</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Try adjusting your filters or search query.
-          </p>
-        </div>
-      )}
+          {filteredBooks.length === 0 && (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-16">
+              <Users className="h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-medium text-foreground">No active books found</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Try adjusting your filters or search query.
+              </p>
+            </div>
+          )}
+        </TabsContent>
 
-      {/* Retired Books Section */}
-      {retiredBooks.length > 0 && (
-        <div className="space-y-3 mt-8 fade-in">
-          <div className="flex items-center gap-3 border-t border-border pt-6">
-            <Archive className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-lg font-semibold text-muted-foreground">Retired Books</h2>
-            <Badge variant="outline" className="text-xs">
-              {retiredBooks.length} {retiredBooks.length === 1 ? 'book' : 'books'}
-            </Badge>
-          </div>
-          <div className="rounded-xl border border-border bg-card/50 overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/20 hover:bg-muted/20">
-                  <TableHead className="font-semibold text-muted-foreground">Book Name</TableHead>
-                  <TableHead className="font-semibold text-muted-foreground">Desk</TableHead>
-                  <TableHead className="font-semibold text-muted-foreground">Primary Trader</TableHead>
-                  <TableHead className="font-semibold text-muted-foreground">Product Controller</TableHead>
-                  <TableHead className="font-semibold text-muted-foreground text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {retiredBooks.map((book) => (
-                  <TableRow
-                    key={book.id}
-                    className="opacity-60 hover:opacity-80 transition-opacity"
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{book.name}</span>
-                        <Badge variant="outline" className="text-[10px] bg-muted/50">
-                          RETIRED
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{book.desk}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                          {book.primaryTrader.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <span className="text-muted-foreground">{book.primaryTrader}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                          {book.productController.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <span className="text-muted-foreground">{book.productController}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setEditingBook(book)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="gap-1"
-                          onClick={() => handleToggleRetire(book)}
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                          Restore
-                        </Button>
-                      </div>
-                    </TableCell>
+        <TabsContent value="retired" className="space-y-6">
+          {retiredBooks.length > 0 ? (
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableHead className="font-semibold">Book Name</TableHead>
+                    <TableHead className="font-semibold">Desk</TableHead>
+                    <TableHead className="font-semibold">Primary Trader</TableHead>
+                    <TableHead className="font-semibold">Secondary Trader</TableHead>
+                    <TableHead className="font-semibold">Desk Head</TableHead>
+                    <TableHead className="font-semibold">Product Controller</TableHead>
+                    <TableHead className="font-semibold text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      )}
+                </TableHeader>
+                <TableBody>
+                  {retiredBooks.map((book) => (
+                    <TableRow key={book.id} className="transition-colors">
+                      <TableCell>
+                        <span className="font-medium">{book.name}</span>
+                      </TableCell>
+                      <TableCell>{book.desk}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold text-primary">
+                            {book.primaryTrader.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          {book.primaryTrader}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold text-secondary-foreground">
+                            {book.secondaryTrader.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          {book.secondaryTrader}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-warning/20 flex items-center justify-center text-[10px] font-bold text-warning">
+                            {book.deskHead.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          {book.deskHead}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-success/20 flex items-center justify-center text-[10px] font-bold text-success">
+                            {book.productController.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          {book.productController}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setEditingBook(book)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1"
+                            onClick={() => handleToggleRetire(book)}
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            Restore
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-16">
+              <Archive className="h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-medium text-foreground">No retired books</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Retired books will appear here.
+              </p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Dialog */}
       {editingBook && (
