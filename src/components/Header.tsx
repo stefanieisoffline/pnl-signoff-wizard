@@ -1,4 +1,4 @@
-import { Bell, Settings, User, ArrowLeftRight } from 'lucide-react';
+import { Settings, User, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NavLink } from '@/components/NavLink';
 import { useRole } from '@/contexts/RoleContext';
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from './ui/badge';
+import { NotificationBell } from './NotificationBell';
 
 export function Header() {
   const { currentRole, setCurrentRole, activeUser } = useRole();
@@ -67,12 +68,12 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-warning text-[10px] font-bold text-warning-foreground">
-              3
-            </span>
-          </Button>
+          <NotificationBell 
+            userEmail={currentRole === 'trader' 
+              ? 'robert.allan@sefe-energy.com' 
+              : 'veronika.yastrebova@sefe-energy.com'
+            } 
+          />
           <Button variant="ghost" size="icon">
             <Settings className="h-5 w-5" />
           </Button>
