@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Book, mockBooks, currentUser, getLastWorkingDays } from '@/lib/mockData';
+import { Book, mockBooks, getLastWorkingDays } from '@/lib/mockData';
 import { Header } from './Header';
 import { StatsCard } from './StatsCard';
 import { SignOffGrid } from './SignOffGrid';
@@ -9,8 +9,10 @@ import { CommentsSummary } from './CommentsSummary';
 import { ReminderControls } from './ReminderControls';
 import { DateRangeSelector } from './DateRangeSelector';
 import { BookOpen, CheckCircle, AlertTriangle, XCircle, MessageSquare } from 'lucide-react';
+import { useRole } from '@/contexts/RoleContext';
 
 export function Dashboard() {
+  const { activeUser } = useRole();
   const [books, setBooks] = useState<Book[]>(mockBooks);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -23,8 +25,8 @@ export function Dashboard() {
 
   // Filter books owned by current user
   const myBooks = useMemo(() => {
-    return books.filter(book => book.productController === currentUser.name);
-  }, [books]);
+    return books.filter(book => book.productController === activeUser.name);
+  }, [books, activeUser.name]);
 
   // Apply filters
   const filteredBooks = useMemo(() => {
@@ -84,7 +86,7 @@ export function Dashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-foreground">
-            Welcome back, {currentUser.name.split(' ')[0]}
+            Welcome back, {activeUser.name.split(' ')[0]}
           </h2>
           <p className="mt-1 text-muted-foreground">
             Here's an overview of your P&L report sign-offs for the last {daysToShow} working days.
