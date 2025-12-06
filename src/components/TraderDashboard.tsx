@@ -9,16 +9,10 @@ import { DateRangeSelector } from './DateRangeSelector';
 import { BookOpen, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from '@/hooks/use-toast';
-
-// Mock trader user - Robert Allan is a primary trader on many books
-export const traderUser = {
-  id: 'trader-1',
-  name: 'Robert Allan',
-  email: 'robert.allan@sefe.com',
-  role: 'trader' as const,
-};
+import { useRole } from '@/contexts/RoleContext';
 
 export function TraderDashboard() {
+  const { activeUser } = useRole();
   const [books, setBooks] = useState<Book[]>(mockBooks);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,11 +25,11 @@ export function TraderDashboard() {
   const myBooks = useMemo(() => {
     return books.filter(
       book => 
-        book.primaryTrader === traderUser.name || 
-        book.secondaryTrader === traderUser.name ||
-        book.deskHead === traderUser.name
+        book.primaryTrader === activeUser.name || 
+        book.secondaryTrader === activeUser.name ||
+        book.deskHead === activeUser.name
     );
-  }, [books]);
+  }, [books, activeUser.name]);
 
   // Apply filters
   const filteredBooks = useMemo(() => {
@@ -88,7 +82,7 @@ export function TraderDashboard() {
     let signedCount = 0;
 
     const updatedBooks = books.map(book => {
-      if (book.primaryTrader !== traderUser.name && book.secondaryTrader !== traderUser.name) {
+      if (book.primaryTrader !== activeUser.name && book.secondaryTrader !== activeUser.name) {
         return book;
       }
       const todaySignOff = book.signOffs.find(s => s.date === today);
@@ -98,7 +92,7 @@ export function TraderDashboard() {
           ...book,
           signOffs: book.signOffs.map(s =>
             s.date === today
-              ? { ...s, status: 'signed' as const, signedBy: traderUser.name, signedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) }
+              ? { ...s, status: 'signed' as const, signedBy: activeUser.name, signedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) }
               : s
           ),
         };
@@ -122,7 +116,7 @@ export function TraderDashboard() {
         <div className="mb-8 flex items-start justify-between">
           <div>
             <h2 className="text-2xl font-bold text-foreground">
-              Welcome back, {traderUser.name.split(' ')[0]}
+              Welcome back, {activeUser.name.split(' ')[0]}
             </h2>
             <p className="mt-1 text-muted-foreground">
               Review and sign off your P&L reports for the last {daysToShow} working days.
@@ -195,7 +189,7 @@ export function TraderDashboard() {
             books={filteredBooks} 
             onBookClick={setSelectedBook}
             onUpdateBook={handleUpdateBook}
-            traderName={traderUser.name}
+            traderName={activeUser.name}
             daysToShow={daysToShow}
           />
         </div>
@@ -218,7 +212,7 @@ export function TraderDashboard() {
         open={!!selectedBook}
         onClose={() => setSelectedBook(null)}
         onUpdateBook={handleUpdateBook}
-        traderName={traderUser.name}
+        traderName={activeUser.name}
       />
     </div>
   );
