@@ -23,13 +23,14 @@ export function TraderDashboard() {
 
   // Filter books where current trader is primary trader, secondary trader, or desk head
   const myBooks = useMemo(() => {
+    if (!activeUser) return [];
     return books.filter(
       book => 
         book.primaryTrader === activeUser.name || 
         book.secondaryTrader === activeUser.name ||
         book.deskHead === activeUser.name
     );
-  }, [books, activeUser.name]);
+  }, [books, activeUser]);
 
   // Apply filters
   const filteredBooks = useMemo(() => {
@@ -78,6 +79,8 @@ export function TraderDashboard() {
   };
 
   const handleSignAllPending = () => {
+    if (!activeUser) return;
+    
     let signedCount = 0;
 
     // Get all book IDs that belong to this trader
@@ -128,7 +131,7 @@ export function TraderDashboard() {
         <div className="mb-8 flex items-start justify-between">
           <div>
             <h2 className="text-2xl font-bold text-foreground">
-              Welcome back, {activeUser.name.split(' ')[0]}
+              Welcome back, {activeUser?.name.split(' ')[0]}
             </h2>
             <p className="mt-1 text-muted-foreground">
               Review and sign off your P&L reports for the last {daysToShow} working days.
@@ -201,7 +204,7 @@ export function TraderDashboard() {
             books={filteredBooks} 
             onBookClick={setSelectedBook}
             onUpdateBook={handleUpdateBook}
-            traderName={activeUser.name}
+            traderName={activeUser?.name || ''}
             daysToShow={daysToShow}
           />
         </div>
@@ -224,7 +227,7 @@ export function TraderDashboard() {
         open={!!selectedBook}
         onClose={() => setSelectedBook(null)}
         onUpdateBook={handleUpdateBook}
-        traderName={activeUser.name}
+        traderName={activeUser?.name || ''}
       />
     </div>
   );

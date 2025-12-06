@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRole, productControllers, traders } from '@/contexts/RoleContext';
+import { useRole, productControllers, traders, deskHeads } from '@/contexts/RoleContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +11,19 @@ import { Mail } from 'lucide-react';
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { setCurrentRole, setSelectedPCIndex, setSelectedTraderIndex } = useRole();
+  const { login, isLoggedIn, activeUser } = useRole();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isLoggedIn && activeUser) {
+      if (activeUser.role === 'product_controller') {
+        navigate('/');
+      } else {
+        navigate('/trader');
+      }
+    }
+  }, [isLoggedIn, activeUser, navigate]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,32 +32,45 @@ export default function Auth() {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Check if email matches a product controller
-    const pcIndex = productControllers.findIndex(
+    const pc = productControllers.find(
       pc => pc.email.toLowerCase() === normalizedEmail
     );
 
-    if (pcIndex !== -1) {
-      setCurrentRole('product_controller');
-      setSelectedPCIndex(pcIndex);
+    if (pc) {
+      login(pc);
       toast({
         title: "Welcome back!",
-        description: `Logged in as ${productControllers[pcIndex].name}`,
+        description: `Logged in as ${pc.name} (Product Controller)`,
       });
       navigate('/');
       return;
     }
 
+    // Check if email matches a desk head
+    const dh = deskHeads.find(
+      dh => dh.email.toLowerCase() === normalizedEmail
+    );
+
+    if (dh) {
+      login(dh);
+      toast({
+        title: "Welcome back!",
+        description: `Logged in as ${dh.name} (Desk Head)`,
+      });
+      navigate('/trader');
+      return;
+    }
+
     // Check if email matches a trader
-    const traderIndex = traders.findIndex(
+    const trader = traders.find(
       trader => trader.email.toLowerCase() === normalizedEmail
     );
 
-    if (traderIndex !== -1) {
-      setCurrentRole('trader');
-      setSelectedTraderIndex(traderIndex);
+    if (trader) {
+      login(trader);
       toast({
         title: "Welcome back!",
-        description: `Logged in as ${traders[traderIndex].name}`,
+        description: `Logged in as ${trader.name} (Trader)`,
       });
       navigate('/trader');
       return;

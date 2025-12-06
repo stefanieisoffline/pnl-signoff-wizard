@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
-export type UserRole = 'product_controller' | 'trader';
+export type UserRole = 'product_controller' | 'trader' | 'desk_head';
 
 interface RoleUser {
   id: string;
@@ -95,18 +95,37 @@ export const traders: RoleUser[] = [
   { id: 'tr-65', name: 'Zhenning Teo', email: 'zhenning.teo@sefe.eu', role: 'trader' },
   { id: 'tr-66', name: 'Josh Atherall', email: 'josh.atherall@sefe.eu', role: 'trader' },
   { id: 'tr-67', name: 'Eddie Ramprakash', email: 'eddie.ramprakash@sefe.eu', role: 'trader' },
-  { id: 'tr-68', name: 'Christopher Holmes', email: 'christopher.holmes@sefe.eu', role: 'trader' },
-  { id: 'tr-69', name: 'Karoly Schmidt', email: 'karoly.schmidt@sefe.eu', role: 'trader' },
+  { id: 'tr-68', name: 'Karoly Schmidt', email: 'karoly.schmidt@sefe.eu', role: 'trader' },
+];
+
+// Desk head users (from spreadsheet)
+export const deskHeads: RoleUser[] = [
+  { id: 'dh-1', name: 'Ed Humphreys', email: 'ed.humphreys@sefe.eu', role: 'desk_head' },
+  { id: 'dh-2', name: 'Dom Both', email: 'dom.both@sefe.eu', role: 'desk_head' },
+  { id: 'dh-3', name: 'Ghassan Matta', email: 'ghassan.matta.dh@sefe.eu', role: 'desk_head' },
+  { id: 'dh-4', name: 'Jean-Manuel Conil-Lacoste', email: 'jeanmanuel.conillacoste.dh@sefe.eu', role: 'desk_head' },
+  { id: 'dh-5', name: 'Ben Street', email: 'ben.street@sefe.eu', role: 'desk_head' },
+  { id: 'dh-6', name: 'Marcus Bredin', email: 'marcus.bredin.dh@sefe.eu', role: 'desk_head' },
+  { id: 'dh-7', name: 'Michael Brewin', email: 'michael.brewin.dh@sefe.eu', role: 'desk_head' },
+  { id: 'dh-8', name: 'Jeremy Burns', email: 'jeremy.burns.dh@sefe.eu', role: 'desk_head' },
+  { id: 'dh-9', name: 'Nathan Dixon', email: 'nathan.dixon.dh@sefe.eu', role: 'desk_head' },
+  { id: 'dh-10', name: 'Mikhail Potapenko', email: 'mikhail.potapenko@sefe.eu', role: 'desk_head' },
+  { id: 'dh-11', name: 'Edward Gomersall', email: 'edward.gomersall.dh@sefe.eu', role: 'desk_head' },
 ];
 
 interface RoleContextType {
   currentRole: UserRole;
   setCurrentRole: (role: UserRole) => void;
-  activeUser: RoleUser;
+  activeUser: RoleUser | null;
   selectedPCIndex: number;
   setSelectedPCIndex: (index: number) => void;
   selectedTraderIndex: number;
   setSelectedTraderIndex: (index: number) => void;
+  selectedDeskHeadIndex: number;
+  setSelectedDeskHeadIndex: (index: number) => void;
+  isLoggedIn: boolean;
+  login: (user: RoleUser) => void;
+  logout: () => void;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
@@ -115,10 +134,37 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [currentRole, setCurrentRole] = useState<UserRole>('product_controller');
   const [selectedPCIndex, setSelectedPCIndex] = useState(0);
   const [selectedTraderIndex, setSelectedTraderIndex] = useState(0);
+  const [selectedDeskHeadIndex, setSelectedDeskHeadIndex] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [activeUser, setActiveUser] = useState<RoleUser | null>(null);
 
-  const activeUser: RoleUser = currentRole === 'product_controller' 
-    ? productControllers[selectedPCIndex]
-    : traders[selectedTraderIndex];
+  // Check for stored login on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('sefe_user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser) as RoleUser;
+        setActiveUser(user);
+        setCurrentRole(user.role);
+        setIsLoggedIn(true);
+      } catch {
+        localStorage.removeItem('sefe_user');
+      }
+    }
+  }, []);
+
+  const login = (user: RoleUser) => {
+    setActiveUser(user);
+    setCurrentRole(user.role);
+    setIsLoggedIn(true);
+    localStorage.setItem('sefe_user', JSON.stringify(user));
+  };
+
+  const logout = () => {
+    setActiveUser(null);
+    setIsLoggedIn(false);
+    localStorage.removeItem('sefe_user');
+  };
 
   return (
     <RoleContext.Provider value={{ 
@@ -129,6 +175,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       setSelectedPCIndex,
       selectedTraderIndex,
       setSelectedTraderIndex,
+      selectedDeskHeadIndex,
+      setSelectedDeskHeadIndex,
+      isLoggedIn,
+      login,
+      logout,
     }}>
       {children}
     </RoleContext.Provider>
