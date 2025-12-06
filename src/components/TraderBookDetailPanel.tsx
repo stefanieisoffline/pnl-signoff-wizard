@@ -234,6 +234,7 @@ export function TraderBookDetailPanel({ book, open, onClose, onUpdateBook, trade
               onUpdateBook={onUpdateBook}
               canAddComment={true}
               canReply={false}
+              availableDates={workingDays}
             />
           </TabsContent>
         </Tabs>

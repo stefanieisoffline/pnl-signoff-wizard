@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Book, formatWorkingDay, mockUsers, SignOffStatus } from '@/lib/mockData';
+import { Book, formatWorkingDay, mockUsers, SignOffStatus, getLastWorkingDays } from '@/lib/mockData';
 import { StatusBadge } from './StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +22,7 @@ interface BookDetailPanelProps {
 export function BookDetailPanel({ book, open, onClose, onUpdateBook }: BookDetailPanelProps) {
   const [comment, setComment] = useState('');
   const [selectedController, setSelectedController] = useState('');
+  const workingDays = getLastWorkingDays(5);
 
   if (!book) return null;
 
@@ -220,6 +221,7 @@ export function BookDetailPanel({ book, open, onClose, onUpdateBook }: BookDetai
               onUpdateBook={onUpdateBook}
               canAddComment={false}
               canReply={true}
+              availableDates={workingDays}
             />
           </TabsContent>
 

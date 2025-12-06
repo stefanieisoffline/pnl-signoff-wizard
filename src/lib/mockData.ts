@@ -11,6 +11,7 @@ export interface SignOffRecord {
 export interface BookComment {
   id: string;
   bookId: string;
+  date: string; // The reporting date this comment is about
   authorName: string;
   authorRole: 'trader' | 'product_controller' | 'desk_head';
   content: string;
