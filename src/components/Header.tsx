@@ -1,36 +1,41 @@
-import { Settings, User, ArrowLeftRight } from 'lucide-react';
+import { Settings, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NavLink } from '@/components/NavLink';
-import { useRole, productControllers, traders } from '@/contexts/RoleContext';
+import { useRole } from '@/contexts/RoleContext';
 import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from './ui/badge';
 import { NotificationBell } from './NotificationBell';
-import { ScrollArea } from './ui/scroll-area';
 
 export function Header() {
-  const { currentRole, setCurrentRole, activeUser, selectedPCIndex, setSelectedPCIndex, selectedTraderIndex, setSelectedTraderIndex } = useRole();
+  const { currentRole, activeUser, logout } = useRole();
   const navigate = useNavigate();
 
-  const handleRoleSwitch = (role: 'product_controller' | 'trader', index?: number) => {
-    setCurrentRole(role);
-    if (role === 'product_controller' && index !== undefined) {
-      setSelectedPCIndex(index);
-    } else if (role === 'trader' && index !== undefined) {
-      setSelectedTraderIndex(index);
-    }
-    navigate(role === 'product_controller' ? '/' : '/trader');
+  const handleLogout = () => {
+    logout();
+    navigate('/auth');
   };
+
+  const getRoleBadge = () => {
+    switch (currentRole) {
+      case 'product_controller':
+        return 'PC';
+      case 'trader':
+        return 'Trader';
+      case 'desk_head':
+        return 'Desk Head';
+      default:
+        return '';
+    }
+  };
+
+  if (!activeUser) return null;
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -78,10 +83,7 @@ export function Header() {
 
         <div className="flex items-center gap-3">
           <NotificationBell 
-            userEmail={currentRole === 'trader' 
-              ? 'robert.allan@sefe-energy.com' 
-              : activeUser.email
-            } 
+            userEmail={activeUser.email} 
           />
           <Button variant="ghost" size="icon">
             <Settings className="h-5 w-5" />
@@ -93,12 +95,9 @@ export function Header() {
                 <button className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50">
                   <div className="text-right">
                     <p className="text-sm font-medium text-foreground">{activeUser.name}</p>
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                        {currentRole === 'product_controller' ? 'PC' : 'Trader'}
-                      </Badge>
-                      <ArrowLeftRight className="h-3 w-3 text-muted-foreground" />
-                    </div>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      {getRoleBadge()}
+                    </Badge>
                   </div>
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
                     <User className="h-5 w-5" />
@@ -106,49 +105,15 @@ export function Header() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <span>Product Controllers</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-56">
-                    <ScrollArea className="h-[300px]">
-                      {productControllers.map((pc, index) => (
-                        <DropdownMenuItem
-                          key={pc.id}
-                          onClick={() => handleRoleSwitch('product_controller', index)}
-                          className={currentRole === 'product_controller' && selectedPCIndex === index ? 'bg-muted' : ''}
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-medium">{pc.name}</span>
-                            <span className="text-xs text-muted-foreground">{pc.email}</span>
-                          </div>
-                        </DropdownMenuItem>
-                      ))}
-                    </ScrollArea>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium">{activeUser.name}</p>
+                  <p className="text-xs text-muted-foreground">{activeUser.email}</p>
+                </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <span>Traders</span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-56">
-                    <ScrollArea className="h-[300px]">
-                      {traders.map((trader, index) => (
-                        <DropdownMenuItem
-                          key={trader.id}
-                          onClick={() => handleRoleSwitch('trader', index)}
-                          className={currentRole === 'trader' && selectedTraderIndex === index ? 'bg-muted' : ''}
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-medium">{trader.name}</span>
-                            <span className="text-xs text-muted-foreground">{trader.email}</span>
-                          </div>
-                        </DropdownMenuItem>
-                      ))}
-                    </ScrollArea>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

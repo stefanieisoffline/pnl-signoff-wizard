@@ -25,8 +25,9 @@ export function Dashboard() {
 
   // Filter books owned by current user
   const myBooks = useMemo(() => {
+    if (!activeUser) return [];
     return books.filter(book => book.productController === activeUser.name);
-  }, [books, activeUser.name]);
+  }, [books, activeUser]);
 
   // Apply filters
   const filteredBooks = useMemo(() => {
