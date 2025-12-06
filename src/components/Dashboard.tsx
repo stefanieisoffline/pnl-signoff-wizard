@@ -6,6 +6,7 @@ import { SignOffGrid } from './SignOffGrid';
 import { BookDetailPanel } from './BookDetailPanel';
 import { FilterBar } from './FilterBar';
 import { CommentsSummary } from './CommentsSummary';
+import { ReminderControls } from './ReminderControls';
 import { BookOpen, CheckCircle, AlertTriangle, XCircle, MessageSquare } from 'lucide-react';
 
 export function Dashboard() {
@@ -125,12 +126,15 @@ export function Dashboard() {
           />
         </div>
 
-        {/* Comments Summary */}
-        <CommentsSummary 
-          books={myBooks} 
-          onBookClick={handleBookClick} 
-          onUpdateBook={handleUpdateBook}
-        />
+        {/* Reminder Controls & Comments Summary */}
+        <div className="mb-6 grid gap-4 lg:grid-cols-2">
+          <ReminderControls books={myBooks} />
+          <CommentsSummary 
+            books={myBooks} 
+            onBookClick={handleBookClick} 
+            onUpdateBook={handleUpdateBook}
+          />
+        </div>
 
         {/* Filter Bar */}
         <div className="mb-6">
