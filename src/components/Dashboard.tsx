@@ -5,7 +5,8 @@ import { StatsCard } from './StatsCard';
 import { SignOffGrid } from './SignOffGrid';
 import { BookDetailPanel } from './BookDetailPanel';
 import { FilterBar } from './FilterBar';
-import { BookOpen, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { CommentsSummary } from './CommentsSummary';
+import { BookOpen, CheckCircle, AlertTriangle, XCircle, MessageSquare } from 'lucide-react';
 
 export function Dashboard() {
   const [books, setBooks] = useState<Book[]>(mockBooks);
@@ -27,6 +28,8 @@ export function Dashboard() {
       const matchesSearch = 
         book.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         book.primaryTrader.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.secondaryTrader.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.deskHead.toLowerCase().includes(searchQuery.toLowerCase()) ||
         book.desk.toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesDesk = selectedDesk === 'all' || book.desk === selectedDesk;
@@ -43,11 +46,14 @@ export function Dashboard() {
       b.signOffs.filter(s => s.date === workingDays[0])
     );
 
+    const totalComments = activeBooks.reduce((sum, b) => sum + b.comments.length, 0);
+
     return {
       totalBooks: activeBooks.length,
       signedToday: todaySignOffs.filter(s => s.status === 'signed').length,
       pendingToday: todaySignOffs.filter(s => s.status === 'pending').length,
       rejectedToday: todaySignOffs.filter(s => s.status === 'rejected').length,
+      totalComments,
     };
   }, [myBooks, workingDays]);
 
@@ -72,7 +78,7 @@ export function Dashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatsCard
             title="Total Books"
             value={stats.totalBooks}
@@ -100,7 +106,16 @@ export function Dashboard() {
             icon={XCircle}
             variant="danger"
           />
+          <StatsCard
+            title="Comments"
+            value={stats.totalComments}
+            subtitle="From traders"
+            icon={MessageSquare}
+          />
         </div>
+
+        {/* Comments Summary */}
+        <CommentsSummary books={myBooks} onBookClick={setSelectedBook} />
 
         {/* Filter Bar */}
         <div className="mb-6">
