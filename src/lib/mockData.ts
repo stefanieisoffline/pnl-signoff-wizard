@@ -8,6 +8,16 @@ export interface SignOffRecord {
   comment?: string;
 }
 
+export interface BookComment {
+  id: string;
+  bookId: string;
+  authorName: string;
+  authorRole: 'trader' | 'product_controller' | 'desk_head';
+  content: string;
+  createdAt: string;
+  parentId?: string; // For replies
+}
+
 export interface Book {
   id: string;
   name: string;
@@ -18,6 +28,7 @@ export interface Book {
   productController: string;
   isRetired: boolean;
   signOffs: SignOffRecord[];
+  comments: BookComment[];
 }
 
 export interface User {
@@ -242,6 +253,7 @@ export const mockBooks: Book[] = bookData.map((book, index) => ({
   productController: book.productController,
   isRetired: false,
   signOffs: generateRandomSignOffs(),
+  comments: [],
 }));
 
 // Extract unique product controllers from book data
