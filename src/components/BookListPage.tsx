@@ -112,9 +112,9 @@ export function BookListPage() {
   const [books, setBooks] = useState<Book[]>(mockBooks);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDesk, setSelectedDesk] = useState('all');
-  const [showRetired, setShowRetired] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
 
+  // Active books filtered
   const filteredBooks = useMemo(() => {
     return books.filter(book => {
       const matchesSearch =
@@ -123,11 +123,24 @@ export function BookListPage() {
         book.productController.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesDesk = selectedDesk === 'all' || book.desk === selectedDesk;
-      const matchesRetired = showRetired || !book.isRetired;
 
-      return matchesSearch && matchesDesk && matchesRetired;
+      return matchesSearch && matchesDesk && !book.isRetired;
     });
-  }, [books, searchQuery, selectedDesk, showRetired]);
+  }, [books, searchQuery, selectedDesk]);
+
+  // Retired books filtered
+  const retiredBooks = useMemo(() => {
+    return books.filter(book => {
+      const matchesSearch =
+        book.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.primaryTrader.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.productController.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesDesk = selectedDesk === 'all' || book.desk === selectedDesk;
+
+      return matchesSearch && matchesDesk && book.isRetired;
+    });
+  }, [books, searchQuery, selectedDesk]);
 
   const handleUpdateBook = (updatedBook: Book) => {
     setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b));
@@ -184,12 +197,6 @@ export function BookListPage() {
             ))}
           </SelectContent>
         </Select>
-        <Button
-          variant={showRetired ? 'secondary' : 'outline'}
-          onClick={() => setShowRetired(!showRetired)}
-        >
-          {showRetired ? 'Hide Retired' : 'Show Retired'}
-        </Button>
       </div>
 
       {/* Stats */}
@@ -315,10 +322,91 @@ export function BookListPage() {
       {filteredBooks.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-16">
           <Users className="h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-medium text-foreground">No books found</h3>
+          <h3 className="mt-4 text-lg font-medium text-foreground">No active books found</h3>
           <p className="mt-1 text-sm text-muted-foreground">
             Try adjusting your filters or search query.
           </p>
+        </div>
+      )}
+
+      {/* Retired Books Section */}
+      {retiredBooks.length > 0 && (
+        <div className="space-y-3 mt-8 fade-in">
+          <div className="flex items-center gap-3 border-t border-border pt-6">
+            <Archive className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold text-muted-foreground">Retired Books</h2>
+            <Badge variant="outline" className="text-xs">
+              {retiredBooks.length} {retiredBooks.length === 1 ? 'book' : 'books'}
+            </Badge>
+          </div>
+          <div className="rounded-xl border border-border bg-card/50 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/20 hover:bg-muted/20">
+                  <TableHead className="font-semibold text-muted-foreground">Book Name</TableHead>
+                  <TableHead className="font-semibold text-muted-foreground">Desk</TableHead>
+                  <TableHead className="font-semibold text-muted-foreground">Primary Trader</TableHead>
+                  <TableHead className="font-semibold text-muted-foreground">Product Controller</TableHead>
+                  <TableHead className="font-semibold text-muted-foreground text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {retiredBooks.map((book) => (
+                  <TableRow
+                    key={book.id}
+                    className="opacity-60 hover:opacity-80 transition-opacity"
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{book.name}</span>
+                        <Badge variant="outline" className="text-[10px] bg-muted/50">
+                          RETIRED
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{book.desk}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                          {book.primaryTrader.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <span className="text-muted-foreground">{book.primaryTrader}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                          {book.productController.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <span className="text-muted-foreground">{book.productController}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setEditingBook(book)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => handleToggleRetire(book)}
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          Restore
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
 
