@@ -1,7 +1,7 @@
 import { Settings, User, ArrowLeftRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NavLink } from '@/components/NavLink';
-import { useRole, productControllers } from '@/contexts/RoleContext';
+import { useRole, productControllers, traders } from '@/contexts/RoleContext';
 import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
@@ -10,18 +10,24 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from './ui/badge';
 import { NotificationBell } from './NotificationBell';
+import { ScrollArea } from './ui/scroll-area';
 
 export function Header() {
-  const { currentRole, setCurrentRole, activeUser, selectedPCIndex, setSelectedPCIndex } = useRole();
+  const { currentRole, setCurrentRole, activeUser, selectedPCIndex, setSelectedPCIndex, selectedTraderIndex, setSelectedTraderIndex } = useRole();
   const navigate = useNavigate();
 
-  const handleRoleSwitch = (role: 'product_controller' | 'trader', pcIndex?: number) => {
+  const handleRoleSwitch = (role: 'product_controller' | 'trader', index?: number) => {
     setCurrentRole(role);
-    if (role === 'product_controller' && pcIndex !== undefined) {
-      setSelectedPCIndex(pcIndex);
+    if (role === 'product_controller' && index !== undefined) {
+      setSelectedPCIndex(index);
+    } else if (role === 'trader' && index !== undefined) {
+      setSelectedTraderIndex(index);
     }
     navigate(role === 'product_controller' ? '/' : '/trader');
   };
@@ -100,32 +106,49 @@ export function Header() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Product Controllers</DropdownMenuLabel>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <span>Product Controllers</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-56">
+                    <ScrollArea className="h-[300px]">
+                      {productControllers.map((pc, index) => (
+                        <DropdownMenuItem
+                          key={pc.id}
+                          onClick={() => handleRoleSwitch('product_controller', index)}
+                          className={currentRole === 'product_controller' && selectedPCIndex === index ? 'bg-muted' : ''}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{pc.name}</span>
+                            <span className="text-xs text-muted-foreground">{pc.email}</span>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </ScrollArea>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
                 <DropdownMenuSeparator />
-                {productControllers.map((pc, index) => (
-                  <DropdownMenuItem
-                    key={pc.id}
-                    onClick={() => handleRoleSwitch('product_controller', index)}
-                    className={currentRole === 'product_controller' && selectedPCIndex === index ? 'bg-muted' : ''}
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{pc.name}</span>
-                      <span className="text-xs text-muted-foreground">{pc.email}</span>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Trader</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => handleRoleSwitch('trader')}
-                  className={currentRole === 'trader' ? 'bg-muted' : ''}
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium">Robert Allan</span>
-                    <span className="text-xs text-muted-foreground">robert.allan@sefe.eu</span>
-                  </div>
-                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <span>Traders</span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-56">
+                    <ScrollArea className="h-[300px]">
+                      {traders.map((trader, index) => (
+                        <DropdownMenuItem
+                          key={trader.id}
+                          onClick={() => handleRoleSwitch('trader', index)}
+                          className={currentRole === 'trader' && selectedTraderIndex === index ? 'bg-muted' : ''}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{trader.name}</span>
+                            <span className="text-xs text-muted-foreground">{trader.email}</span>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </ScrollArea>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
