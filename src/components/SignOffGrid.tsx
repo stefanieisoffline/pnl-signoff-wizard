@@ -42,6 +42,9 @@ export function SignOffGrid({ books, onBookClick }: SignOffGridProps) {
           <tbody>
             {books.map((book, index) => {
               const commentsCount = book.comments.length;
+              const unreadCommentsCount = book.comments.filter(c => 
+                c.authorRole !== 'product_controller' && !c.readByPC
+              ).length;
               
               return (
                 <tr
@@ -64,9 +67,12 @@ export function SignOffGrid({ books, onBookClick }: SignOffGridProps) {
                         </span>
                       )}
                       {commentsCount > 0 && (
-                        <Badge variant="outline" className="text-xs gap-1">
+                        <Badge 
+                          variant={unreadCommentsCount > 0 ? "destructive" : "outline"} 
+                          className={cn("text-xs gap-1", unreadCommentsCount > 0 && "animate-pulse")}
+                        >
                           <MessageSquare className="h-3 w-3" />
-                          {commentsCount}
+                          {unreadCommentsCount > 0 ? `${unreadCommentsCount} new` : commentsCount}
                         </Badge>
                       )}
                     </div>
@@ -80,6 +86,9 @@ export function SignOffGrid({ books, onBookClick }: SignOffGridProps) {
                   {workingDays.map((day) => {
                     const signOff = book.signOffs.find(s => s.date === day);
                     const commentsForDate = book.comments.filter(c => c.date === day);
+                    const unreadCount = commentsForDate.filter(c => 
+                      c.authorRole !== 'product_controller' && !c.readByPC
+                    ).length;
                     
                     return (
                       <td key={day} className="px-3 py-3 text-center">
@@ -96,8 +105,13 @@ export function SignOffGrid({ books, onBookClick }: SignOffGridProps) {
                                 <StatusBadge status={signOff?.status || 'none'} size="sm" />
                               </div>
                               {commentsForDate.length > 0 && (
-                                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] text-primary-foreground">
-                                  {commentsForDate.length}
+                                <span className={cn(
+                                  "absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px]",
+                                  unreadCount > 0 
+                                    ? "bg-destructive text-destructive-foreground animate-pulse" 
+                                    : "bg-primary text-primary-foreground"
+                                )}>
+                                  {unreadCount > 0 ? unreadCount : commentsForDate.length}
                                 </span>
                               )}
                             </div>
@@ -107,6 +121,9 @@ export function SignOffGrid({ books, onBookClick }: SignOffGridProps) {
                             {commentsForDate.length > 0 && (
                               <p className="text-xs text-muted-foreground">
                                 {commentsForDate.length} comment{commentsForDate.length > 1 ? 's' : ''}
+                                {unreadCount > 0 && (
+                                  <span className="text-destructive ml-1">({unreadCount} new)</span>
+                                )}
                               </p>
                             )}
                             <p className="text-xs text-muted-foreground mt-1">Click to view</p>

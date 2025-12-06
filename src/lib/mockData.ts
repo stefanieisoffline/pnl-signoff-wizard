@@ -17,6 +17,8 @@ export interface BookComment {
   content: string;
   createdAt: string;
   parentId?: string; // For replies
+  readByPC?: boolean; // Whether product controller has read this comment
+  readByTrader?: boolean; // Whether trader has read this comment
 }
 
 export interface Book {
@@ -267,15 +269,22 @@ const generateSampleComments = (bookId: string, bookName: string, primaryTrader:
     const isFromDeskHead = Math.random() > 0.7;
     const hoursAgo = Math.floor(Math.random() * 48);
     const createdAt = new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString();
+    const authorRole: 'trader' | 'desk_head' = isFromDeskHead ? 'desk_head' : 'trader';
+    
+    // Trader/desk head comments are unread by PC
+    // Mark some as read randomly for demo (recent comments more likely to be unread)
+    const isRecent = hoursAgo < 12;
     
     comments.push({
       id: `comment-${bookId}-${i}`,
       bookId,
       date: workingDaysForComments[Math.floor(Math.random() * workingDaysForComments.length)],
       authorName: isFromDeskHead ? deskHead : primaryTrader,
-      authorRole: isFromDeskHead ? 'desk_head' : 'trader',
+      authorRole,
       content: sampleMessages[Math.floor(Math.random() * sampleMessages.length)],
       createdAt,
+      readByPC: !isRecent || Math.random() > 0.6, // Recent comments are more likely unread
+      readByTrader: true, // Trader's own comments or desk head comments are "read" by traders
     });
   }
 
