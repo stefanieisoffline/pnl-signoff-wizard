@@ -20,14 +20,17 @@ export function CommentsSummary({ books, onBookClick, onUpdateBook }: CommentsSu
 
   // Get all comments from all books, sorted by date
   const allComments = useMemo(() => {
-    const comments: (BookComment & { bookName: string; book: Book })[] = [];
+    const comments: (BookComment & { bookName: string; book: Book; isUnread: boolean })[] = [];
     
     books.forEach(book => {
       book.comments.forEach(comment => {
+        // For PC view, unread means: from trader/desk head AND not read by PC
+        const isUnread = comment.authorRole !== 'product_controller' && !comment.readByPC;
         comments.push({
           ...comment,
           bookName: book.name,
           book,
+          isUnread,
         });
       });
     });
@@ -37,6 +40,10 @@ export function CommentsSummary({ books, onBookClick, onUpdateBook }: CommentsSu
       .filter(c => !c.parentId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [books]);
+
+  const unreadCount = useMemo(() => {
+    return allComments.filter(c => c.isUnread).length;
+  }, [allComments]);
 
   // Get unique books with comments
   const booksWithComments = useMemo(() => {
@@ -163,6 +170,11 @@ export function CommentsSummary({ books, onBookClick, onUpdateBook }: CommentsSu
           <Badge variant="secondary" className="text-xs">
             {allComments.length} total
           </Badge>
+          {unreadCount > 0 && (
+            <Badge variant="destructive" className="text-xs animate-pulse">
+              {unreadCount} unread
+            </Badge>
+          )}
         </div>
         <span className="text-xs text-muted-foreground">
           {booksWithComments.length} books with comments
@@ -176,11 +188,25 @@ export function CommentsSummary({ books, onBookClick, onUpdateBook }: CommentsSu
             const isReplying = replyingTo === comment.id;
             
             return (
-              <div key={comment.id} className="p-3 hover:bg-muted/10 transition-colors">
+              <div 
+                key={comment.id} 
+                className={cn(
+                  "p-3 hover:bg-muted/10 transition-colors",
+                  comment.isUnread && "bg-destructive/5 border-l-2 border-destructive"
+                )}
+              >
                 <div 
                   className="flex items-start gap-3 cursor-pointer"
                   onClick={() => onBookClick(comment.book, comment.date)}
                 >
+                  <div className="relative">
+                    <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", getRoleColor(comment.authorRole))}>
+                      <User className="h-4 w-4" />
+                    </div>
+                    {comment.isUnread && (
+                      <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5 rounded-full bg-destructive animate-pulse" />
+                    )}
+                  </div>
                   <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full", getRoleColor(comment.authorRole))}>
                     <User className="h-4 w-4" />
                   </div>
