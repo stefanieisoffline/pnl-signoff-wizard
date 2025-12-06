@@ -292,6 +292,13 @@ const generateSampleComments = (bookId: string, bookName: string, primaryTrader:
   return comments;
 };
 
+// Sample retired books - mark a few books as retired for demo
+const retiredBookNames = [
+  "CONTI_GAS_STRUCTURES_6",
+  "Consolidated Treasury P&L",
+  "MANAGEMENT_FX_XCDY-DESK_SMT",
+];
+
 export const mockBooks: Book[] = bookData.map((book, index) => ({
   id: String(index + 1),
   name: book.name,
@@ -300,7 +307,7 @@ export const mockBooks: Book[] = bookData.map((book, index) => ({
   secondaryTrader: book.secondaryTrader,
   deskHead: book.deskHead,
   productController: book.productController,
-  isRetired: false,
+  isRetired: retiredBookNames.includes(book.name),
   signOffs: generateRandomSignOffs(),
   comments: generateSampleComments(String(index + 1), book.name, book.primaryTrader, book.deskHead),
 }));
