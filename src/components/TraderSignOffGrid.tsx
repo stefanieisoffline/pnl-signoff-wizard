@@ -1,23 +1,64 @@
-import { Book, getLastWorkingDays, formatWorkingDay } from '@/lib/mockData';
+import { useState } from 'react';
+import { Book, getLastWorkingDays, formatWorkingDay, BookComment } from '@/lib/mockData';
 import { StatusBadge } from './StatusBadge';
 import { Button } from './ui/button';
-import { Check, X, User } from 'lucide-react';
+import { Check, X, User, MessageSquare, Send } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Textarea } from './ui/textarea';
+import { toast } from '@/hooks/use-toast';
 
 interface TraderSignOffGridProps {
   books: Book[];
   onBookClick: (book: Book) => void;
-  onQuickSignOff: (book: Book, date: string) => void;
+  onUpdateBook: (book: Book) => void;
   traderName: string;
 }
 
-export function TraderSignOffGrid({ books, onBookClick, onQuickSignOff, traderName }: TraderSignOffGridProps) {
+export function TraderSignOffGrid({ books, onBookClick, onUpdateBook, traderName }: TraderSignOffGridProps) {
   const workingDays = getLastWorkingDays(5);
+  const [openPopover, setOpenPopover] = useState<string | null>(null);
+  const [comment, setComment] = useState('');
 
-  const handleQuickSign = (e: React.MouseEvent, book: Book, date: string) => {
-    e.stopPropagation();
-    onQuickSignOff(book, date);
+  const handleSignOff = (book: Book, date: string, action: 'sign' | 'reject') => {
+    const updatedSignOffs = book.signOffs.map(s =>
+      s.date === date
+        ? {
+            ...s,
+            status: action === 'sign' ? 'signed' as const : 'rejected' as const,
+            signedBy: traderName,
+            signedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          }
+        : s
+    );
+
+    // Add comment if provided
+    let updatedComments = book.comments;
+    if (comment.trim()) {
+      const newComment: BookComment = {
+        id: `comment-${Date.now()}`,
+        bookId: book.id,
+        date,
+        authorName: traderName,
+        authorRole: book.deskHead === traderName ? 'desk_head' : 'trader',
+        content: comment.trim(),
+        createdAt: new Date().toISOString(),
+      };
+      updatedComments = [...book.comments, newComment];
+    }
+
+    onUpdateBook({ ...book, signOffs: updatedSignOffs, comments: updatedComments });
+    setOpenPopover(null);
+    setComment('');
+    
+    toast({
+      title: action === 'sign' ? 'Report Signed' : 'Report Rejected',
+      description: `${book.name} - ${formatWorkingDay(date)}`,
+      variant: action === 'sign' ? 'default' : 'destructive',
+    });
   };
+
+  const getPopoverKey = (bookId: string, date: string) => `${bookId}-${date}`;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-border bg-card">
@@ -38,32 +79,46 @@ export function TraderSignOffGrid({ books, onBookClick, onQuickSignOff, traderNa
                 {formatWorkingDay(day)}
               </th>
             ))}
-            <th className="px-4 py-3 text-center text-sm font-semibold text-foreground">
-              Action
-            </th>
           </tr>
         </thead>
         <tbody>
           {books.map((book) => {
-            const todaySignOff = book.signOffs.find(s => s.date === workingDays[0]);
             const isPrimary = book.primaryTrader === traderName;
-            const canSign = todaySignOff?.status === 'pending';
+            const isSecondary = book.secondaryTrader === traderName;
+            const isDeskHead = book.deskHead === traderName;
+
+            const getRoleLabel = () => {
+              if (isPrimary) return 'Primary';
+              if (isSecondary) return 'Secondary';
+              if (isDeskHead) return 'Desk Head';
+              return 'Assigned';
+            };
 
             return (
               <tr
                 key={book.id}
-                onClick={() => onBookClick(book)}
-                className="cursor-pointer border-b border-border transition-colors hover:bg-muted/30"
+                className="border-b border-border transition-colors hover:bg-muted/30"
               >
-                <td className="sticky left-0 z-10 bg-card px-4 py-3">
+                <td 
+                  className="sticky left-0 z-10 bg-card px-4 py-3 cursor-pointer"
+                  onClick={() => onBookClick(book)}
+                >
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground">{book.name}</span>
+                    <span className="font-medium text-foreground hover:text-primary transition-colors">
+                      {book.name}
+                    </span>
+                    {book.comments.length > 0 && (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <MessageSquare className="h-3 w-3" />
+                        {book.comments.length}
+                      </Badge>
+                    )}
                   </div>
                 </td>
                 <td className="px-4 py-3">
                   <Badge variant={isPrimary ? "default" : "secondary"} className="text-xs">
                     <User className="mr-1 h-3 w-3" />
-                    {isPrimary ? 'Primary' : 'Secondary'}
+                    {getRoleLabel()}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">
@@ -71,39 +126,79 @@ export function TraderSignOffGrid({ books, onBookClick, onQuickSignOff, traderNa
                 </td>
                 {workingDays.map((day) => {
                   const signOff = book.signOffs.find((s) => s.date === day);
+                  const isPending = signOff?.status === 'pending';
+                  const popoverKey = getPopoverKey(book.id, day);
+                  const commentsForDate = book.comments.filter(c => c.date === day);
+
                   return (
                     <td key={day} className="px-4 py-3 text-center">
-                      <StatusBadge status={signOff?.status || 'none'} />
+                      {isPending ? (
+                        <Popover 
+                          open={openPopover === popoverKey} 
+                          onOpenChange={(open) => {
+                            setOpenPopover(open ? popoverKey : null);
+                            if (!open) setComment('');
+                          }}
+                        >
+                          <PopoverTrigger asChild>
+                            <button 
+                              className="inline-flex items-center gap-1 rounded-full border-2 border-dashed border-warning/50 bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning hover:border-warning hover:bg-warning/20 transition-all"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <span className="relative flex h-2 w-2">
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-75"></span>
+                                <span className="relative inline-flex h-2 w-2 rounded-full bg-warning"></span>
+                              </span>
+                              Pending
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-72 p-0" align="center" onClick={(e) => e.stopPropagation()}>
+                            <div className="p-3 border-b border-border">
+                              <p className="font-medium text-foreground text-sm">{book.name}</p>
+                              <p className="text-xs text-muted-foreground">{formatWorkingDay(day)}</p>
+                            </div>
+                            <div className="p-3 space-y-3">
+                              <Textarea
+                                placeholder="Add a comment (optional)..."
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                className="min-h-[60px] text-sm"
+                              />
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  className="flex-1 gap-1"
+                                  onClick={() => handleSignOff(book, day, 'sign')}
+                                >
+                                  <Check className="h-4 w-4" />
+                                  Sign Off
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="flex-1 gap-1"
+                                  onClick={() => handleSignOff(book, day, 'reject')}
+                                >
+                                  <X className="h-4 w-4" />
+                                  Reject
+                                </Button>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      ) : (
+                        <div className="relative inline-block">
+                          <StatusBadge status={signOff?.status || 'none'} />
+                          {commentsForDate.length > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                              {commentsForDate.length}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
                   );
                 })}
-                <td className="px-4 py-3 text-center">
-                  {canSign ? (
-                    <div className="flex items-center justify-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 text-green-600 hover:bg-green-100 hover:text-green-700"
-                        onClick={(e) => handleQuickSign(e, book, workingDays[0])}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-100 hover:text-red-700"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onBookClick(book);
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </td>
               </tr>
             );
           })}
