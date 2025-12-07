@@ -8,6 +8,7 @@ import { FilterBar } from './FilterBar';
 import { CommentsSummary } from './CommentsSummary';
 import { ReminderControls } from './ReminderControls';
 import { DateRangeSelector } from './DateRangeSelector';
+import { BankHolidayManager } from './BankHolidayManager';
 import { BookOpen, CheckCircle, AlertTriangle, XCircle, MessageSquare } from 'lucide-react';
 import { useRole } from '@/contexts/RoleContext';
 
@@ -158,6 +159,7 @@ export function Dashboard() {
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-foreground">P&L Reports</h3>
             <div className="flex items-center gap-4">
+              <BankHolidayManager />
               <DateRangeSelector value={daysToShow} onChange={setDaysToShow} />
               <span className="text-sm text-muted-foreground">
                 Showing {filteredBooks.length} of {myBooks.length} books

@@ -41,19 +41,58 @@ export interface User {
   role: 'trader' | 'product_controller' | 'desk_head';
 }
 
-// Get last N working days (excluding weekends)
+// Bank holidays storage key
+const BANK_HOLIDAYS_KEY = 'sefe_bank_holidays';
+
+// Get bank holidays from localStorage
+export function getBankHolidays(): string[] {
+  try {
+    const stored = localStorage.getItem(BANK_HOLIDAYS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+// Add a bank holiday
+export function addBankHoliday(date: string): void {
+  const holidays = getBankHolidays();
+  if (!holidays.includes(date)) {
+    holidays.push(date);
+    localStorage.setItem(BANK_HOLIDAYS_KEY, JSON.stringify(holidays));
+  }
+}
+
+// Remove a bank holiday
+export function removeBankHoliday(date: string): void {
+  const holidays = getBankHolidays().filter(h => h !== date);
+  localStorage.setItem(BANK_HOLIDAYS_KEY, JSON.stringify(holidays));
+}
+
+// Check if a date is a bank holiday
+export function isBankHoliday(date: string): boolean {
+  return getBankHolidays().includes(date);
+}
+
+// Get last N working days (excluding weekends and bank holidays)
+// Returns dates in descending order (most recent first)
 export function getLastWorkingDays(count: number): string[] {
   const days: string[] = [];
   let date = new Date();
+  const bankHolidays = getBankHolidays();
   
   while (days.length < count) {
     date.setDate(date.getDate() - 1);
     const dayOfWeek = date.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      days.push(date.toISOString().split('T')[0]);
+    const dateStr = date.toISOString().split('T')[0];
+    
+    // Skip weekends and bank holidays
+    if (dayOfWeek !== 0 && dayOfWeek !== 6 && !bankHolidays.includes(dateStr)) {
+      days.push(dateStr);
     }
   }
   
+  // Already in descending order (most recent first)
   return days;
 }
 
@@ -73,7 +112,18 @@ const generateRandomSignOffs = (): SignOffRecord[] => {
   const statuses: SignOffStatus[] = ['signed', 'pending', 'rejected'];
   const weights = [0.65, 0.25, 0.1]; // More signed than pending/rejected, no "none" status
   
-  return workingDays.map((date) => {
+  return workingDays.map((date, index) => {
+    // Most recent day (index 0) is always pending (new day starts with pending)
+    if (index === 0) {
+      return {
+        date,
+        status: 'pending' as SignOffStatus,
+        signedBy: undefined,
+        signedAt: undefined,
+        comment: undefined,
+      };
+    }
+    
     const rand = Math.random();
     let status: SignOffStatus = 'signed';
     let cumulative = 0;
