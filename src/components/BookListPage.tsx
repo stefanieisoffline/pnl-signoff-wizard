@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
-import { Book, mockBooks, desks, mockUsers } from '@/lib/mockData';
+import { Book, mockBooks, desks, mockUsers, getLastWorkingDays } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -109,11 +109,168 @@ function EditBookDialog({ book, open, onClose, onSave }: EditBookDialogProps) {
   );
 }
 
+interface AddBookDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onSave: (book: Book) => void;
+}
+
+function AddBookDialog({ open, onClose, onSave }: AddBookDialogProps) {
+  const [formData, setFormData] = useState({
+    name: '',
+    desk: desks[0],
+    primaryTrader: '',
+    secondaryTrader: '',
+    deskHead: '',
+    productController: '',
+  });
+
+  const traders = mockUsers.filter(u => u.role === 'trader');
+  const deskHeadsUsers = mockUsers.filter(u => u.role === 'desk_head');
+  const controllers = mockUsers.filter(u => u.role === 'product_controller');
+
+  const handleSave = () => {
+    if (!formData.name.trim()) {
+      toast.error('Please enter a book name');
+      return;
+    }
+    if (!formData.primaryTrader || !formData.secondaryTrader || !formData.deskHead || !formData.productController) {
+      toast.error('Please assign all team members');
+      return;
+    }
+
+    const workingDays = getLastWorkingDays(10);
+    const newBook: Book = {
+      id: `book-${Date.now()}`,
+      name: formData.name.trim(),
+      desk: formData.desk,
+      primaryTrader: formData.primaryTrader,
+      secondaryTrader: formData.secondaryTrader,
+      deskHead: formData.deskHead,
+      productController: formData.productController,
+      isRetired: false,
+      signOffs: workingDays.map((date, index) => ({
+        date,
+        status: index === 0 ? 'pending' : 'signed',
+        signedBy: index === 0 ? undefined : 'Auto-signed',
+        signedAt: index === 0 ? undefined : '09:45',
+      })),
+      comments: [],
+    };
+
+    onSave(newBook);
+    toast.success('Book created successfully');
+    setFormData({
+      name: '',
+      desk: desks[0],
+      primaryTrader: '',
+      secondaryTrader: '',
+      deskHead: '',
+      productController: '',
+    });
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-card border-border">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Plus className="h-5 w-5 text-primary" />
+            Add New Book
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Book Name</Label>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Enter book name"
+              className="bg-muted/30"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Desk</Label>
+            <Select value={formData.desk} onValueChange={(v) => setFormData({ ...formData, desk: v })}>
+              <SelectTrigger className="bg-muted/30">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {desks.map(desk => (
+                  <SelectItem key={desk} value={desk}>{desk}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Primary Trader</Label>
+            <Select value={formData.primaryTrader} onValueChange={(v) => setFormData({ ...formData, primaryTrader: v })}>
+              <SelectTrigger className="bg-muted/30">
+                <SelectValue placeholder="Select primary trader" />
+              </SelectTrigger>
+              <SelectContent>
+                {traders.map(t => (
+                  <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Secondary Trader</Label>
+            <Select value={formData.secondaryTrader} onValueChange={(v) => setFormData({ ...formData, secondaryTrader: v })}>
+              <SelectTrigger className="bg-muted/30">
+                <SelectValue placeholder="Select secondary trader" />
+              </SelectTrigger>
+              <SelectContent>
+                {traders.map(t => (
+                  <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Desk Head</Label>
+            <Select value={formData.deskHead} onValueChange={(v) => setFormData({ ...formData, deskHead: v })}>
+              <SelectTrigger className="bg-muted/30">
+                <SelectValue placeholder="Select desk head" />
+              </SelectTrigger>
+              <SelectContent>
+                {deskHeadsUsers.map(t => (
+                  <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Product Controller</Label>
+            <Select value={formData.productController} onValueChange={(v) => setFormData({ ...formData, productController: v })}>
+              <SelectTrigger className="bg-muted/30">
+                <SelectValue placeholder="Select product controller" />
+              </SelectTrigger>
+              <SelectContent>
+                {controllers.map(t => (
+                  <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave}>Create Book</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function BookListPage() {
   const [books, setBooks] = useState<Book[]>(mockBooks);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDesk, setSelectedDesk] = useState('all');
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   // Active books filtered
   const filteredBooks = useMemo(() => {
@@ -147,6 +304,10 @@ export function BookListPage() {
     setBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b));
   };
 
+  const handleAddBook = (newBook: Book) => {
+    setBooks(prev => [...prev, newBook]);
+  };
+
   const handleToggleRetire = (book: Book) => {
     const updated = { ...book, isRetired: !book.isRetired };
     handleUpdateBook(updated);
@@ -170,7 +331,7 @@ export function BookListPage() {
           <h1 className="text-2xl font-bold text-foreground">Book List Management</h1>
           <p className="text-muted-foreground">Manage all trading books and team assignments across desks</p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setIsAddDialogOpen(true)}>
           <Plus className="h-4 w-4" />
           Add New Book
         </Button>
@@ -427,6 +588,13 @@ export function BookListPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Add Dialog */}
+      <AddBookDialog
+        open={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onSave={handleAddBook}
+      />
 
       {/* Edit Dialog */}
       {editingBook && (
