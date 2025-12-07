@@ -32,11 +32,15 @@ export default function Auth() {
     setIsLoading(true);
 
     const normalizedEmail = email.toLowerCase().trim();
+    console.log('Login attempt with email:', normalizedEmail);
+    console.log('Available admins:', admins.map(a => a.email));
 
     // Check if email matches an admin
     const admin = admins.find(
       a => a.email.toLowerCase() === normalizedEmail
     );
+
+    console.log('Found admin:', admin);
 
     if (admin) {
       login(admin);
@@ -44,7 +48,7 @@ export default function Auth() {
         title: "Welcome back!",
         description: `Logged in as ${admin.name} (Admin)`,
       });
-      navigate('/admin');
+      setTimeout(() => navigate('/admin'), 100);
       return;
     }
 
