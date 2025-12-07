@@ -41,7 +41,44 @@ export interface User {
   role: 'trader' | 'product_controller' | 'desk_head';
 }
 
-// Get last N working days (excluding weekends)
+// UK Bank Holidays for 2024-2026 (expand as needed)
+const UK_BANK_HOLIDAYS: string[] = [
+  // 2024
+  '2024-01-01', // New Year's Day
+  '2024-03-29', // Good Friday
+  '2024-04-01', // Easter Monday
+  '2024-05-06', // Early May Bank Holiday
+  '2024-05-27', // Spring Bank Holiday
+  '2024-08-26', // Summer Bank Holiday
+  '2024-12-25', // Christmas Day
+  '2024-12-26', // Boxing Day
+  // 2025
+  '2025-01-01', // New Year's Day
+  '2025-04-18', // Good Friday
+  '2025-04-21', // Easter Monday
+  '2025-05-05', // Early May Bank Holiday
+  '2025-05-26', // Spring Bank Holiday
+  '2025-08-25', // Summer Bank Holiday
+  '2025-12-25', // Christmas Day
+  '2025-12-26', // Boxing Day
+  // 2026
+  '2026-01-01', // New Year's Day
+  '2026-04-03', // Good Friday
+  '2026-04-06', // Easter Monday
+  '2026-05-04', // Early May Bank Holiday
+  '2026-05-25', // Spring Bank Holiday
+  '2026-08-31', // Summer Bank Holiday
+  '2026-12-25', // Christmas Day
+  '2026-12-28', // Boxing Day (substitute)
+];
+
+// Check if a date is a UK bank holiday
+export function isUKBankHoliday(dateStr: string): boolean {
+  return UK_BANK_HOLIDAYS.includes(dateStr);
+}
+
+// Get last N working days (excluding weekends and UK bank holidays)
+// Returns dates in chronological order (most recent first)
 export function getLastWorkingDays(count: number): string[] {
   const days: string[] = [];
   let date = new Date();
@@ -49,11 +86,15 @@ export function getLastWorkingDays(count: number): string[] {
   while (days.length < count) {
     date.setDate(date.getDate() - 1);
     const dayOfWeek = date.getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      days.push(date.toISOString().split('T')[0]);
+    const dateStr = date.toISOString().split('T')[0];
+    
+    // Skip weekends and UK bank holidays
+    if (dayOfWeek !== 0 && dayOfWeek !== 6 && !isUKBankHoliday(dateStr)) {
+      days.push(dateStr);
     }
   }
   
+  // Return in chronological order (most recent first)
   return days;
 }
 
@@ -73,7 +114,18 @@ const generateRandomSignOffs = (): SignOffRecord[] => {
   const statuses: SignOffStatus[] = ['signed', 'pending', 'rejected'];
   const weights = [0.65, 0.25, 0.1]; // More signed than pending/rejected, no "none" status
   
-  return workingDays.map((date) => {
+  return workingDays.map((date, index) => {
+    // Most recent working day (index 0) is always pending - new day starts with unsigned reports
+    if (index === 0) {
+      return {
+        date,
+        status: 'pending' as SignOffStatus,
+        signedBy: undefined,
+        signedAt: undefined,
+        comment: undefined,
+      };
+    }
+    
     const rand = Math.random();
     let status: SignOffStatus = 'signed';
     let cumulative = 0;
