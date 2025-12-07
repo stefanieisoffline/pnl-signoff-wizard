@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Books from "./pages/Books";
 import Trader from "./pages/Trader";
 import Auth from "./pages/Auth";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,11 @@ const App = () => (
             <Route path="/trader" element={
               <ProtectedRoute>
                 <Trader />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <Admin />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
