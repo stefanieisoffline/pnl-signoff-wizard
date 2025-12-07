@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRole, productControllers, traders, deskHeads, admins } from '@/contexts/RoleContext';
+import { useRole, productControllers, traders, deskHeads } from '@/contexts/RoleContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,9 +17,7 @@ export default function Auth() {
   // Redirect if already logged in
   useEffect(() => {
     if (isLoggedIn && activeUser) {
-      if (activeUser.role === 'admin') {
-        navigate('/admin');
-      } else if (activeUser.role === 'product_controller') {
+      if (activeUser.role === 'product_controller') {
         navigate('/');
       } else {
         navigate('/trader');
@@ -32,25 +30,6 @@ export default function Auth() {
     setIsLoading(true);
 
     const normalizedEmail = email.toLowerCase().trim();
-    console.log('Login attempt with email:', normalizedEmail);
-    console.log('Available admins:', admins.map(a => a.email));
-
-    // Check if email matches an admin
-    const admin = admins.find(
-      a => a.email.toLowerCase() === normalizedEmail
-    );
-
-    console.log('Found admin:', admin);
-
-    if (admin) {
-      login(admin);
-      toast({
-        title: "Welcome back!",
-        description: `Logged in as ${admin.name} (Admin)`,
-      });
-      setTimeout(() => navigate('/admin'), 100);
-      return;
-    }
 
     // Check if email matches a product controller
     const pc = productControllers.find(

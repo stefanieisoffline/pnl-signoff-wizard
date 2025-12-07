@@ -1,24 +1,13 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
-export type UserRole = 'product_controller' | 'trader' | 'desk_head' | 'admin';
+export type UserRole = 'product_controller' | 'trader' | 'desk_head';
 
-export interface RoleUser {
+interface RoleUser {
   id: string;
   name: string;
   email: string;
   role: UserRole;
 }
-
-// Admin users
-export const admins: RoleUser[] = [
-  { id: 'admin-1', name: 'Stefanie Shi', email: 'stefanie.shi@sefe.eu', role: 'admin' },
-  { id: 'admin-2', name: 'Robert Jenkins', email: 'robert.jenkins@sefe.eu', role: 'admin' },
-  { id: 'admin-3', name: 'Edward Costelloe', email: 'edward.costelloe@sefe.eu', role: 'admin' },
-  { id: 'admin-4', name: 'Ross Graham', email: 'ross.graham@sefe.eu', role: 'admin' },
-  { id: 'admin-5', name: 'Jonathan Hughes', email: 'jonathan.hughes@sefe.eu', role: 'admin' },
-  { id: 'admin-6', name: 'Ero Kapatos', email: 'ero.kapatos@sefe.eu', role: 'admin' },
-  { id: 'admin-7', name: 'Vinson Sharma', email: 'vinson.sharma@sefe.eu', role: 'admin' },
-];
 
 // Product controller users
 export const productControllers: RoleUser[] = [
@@ -137,7 +126,6 @@ interface RoleContextType {
   isLoggedIn: boolean;
   login: (user: RoleUser) => void;
   logout: () => void;
-  isAdmin: boolean;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
@@ -178,8 +166,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('sefe_user');
   };
 
-  const isAdmin = activeUser?.role === 'admin';
-
   return (
     <RoleContext.Provider value={{ 
       currentRole, 
@@ -194,7 +180,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       isLoggedIn,
       login,
       logout,
-      isAdmin,
     }}>
       {children}
     </RoleContext.Provider>
