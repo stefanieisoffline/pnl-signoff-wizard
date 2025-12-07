@@ -14,7 +14,7 @@ import { Badge } from './ui/badge';
 import { NotificationBell } from './NotificationBell';
 
 export function Header() {
-  const { currentRole, activeUser, logout } = useRole();
+  const { currentRole, activeUser, logout, isAdmin } = useRole();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -24,6 +24,8 @@ export function Header() {
 
   const getRoleBadge = () => {
     switch (currentRole) {
+      case 'admin':
+        return 'Admin';
       case 'product_controller':
         return 'PC';
       case 'trader':
@@ -52,7 +54,38 @@ export function Header() {
           </div>
 
           <nav className="flex items-center gap-1">
-            {currentRole === 'product_controller' ? (
+            {isAdmin ? (
+              <>
+                <NavLink
+                  to="/admin"
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
+                  activeClassName="text-foreground bg-muted"
+                >
+                  Dashboard
+                </NavLink>
+                <NavLink
+                  to="/"
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
+                  activeClassName="text-foreground bg-muted"
+                >
+                  PC View
+                </NavLink>
+                <NavLink
+                  to="/books"
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
+                  activeClassName="text-foreground bg-muted"
+                >
+                  Book List
+                </NavLink>
+                <NavLink
+                  to="/trader"
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground rounded-lg transition-colors hover:text-foreground hover:bg-muted/50"
+                  activeClassName="text-foreground bg-muted"
+                >
+                  Trader View
+                </NavLink>
+              </>
+            ) : currentRole === 'product_controller' ? (
               <>
                 <NavLink
                   to="/"
@@ -95,7 +128,10 @@ export function Header() {
                 <button className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50">
                   <div className="text-right">
                     <p className="text-sm font-medium text-foreground">{activeUser.name}</p>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    <Badge 
+                      variant={isAdmin ? 'destructive' : 'outline'} 
+                      className="text-[10px] px-1.5 py-0"
+                    >
                       {getRoleBadge()}
                     </Badge>
                   </div>
