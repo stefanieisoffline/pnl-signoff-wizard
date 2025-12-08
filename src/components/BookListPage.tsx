@@ -2,13 +2,14 @@ import { useState, useMemo } from 'react';
 import { Book, mockBooks, desks, mockUsers, getLastWorkingDays } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Plus, Pencil, Archive, RotateCcw, Users } from 'lucide-react';
+import { Search, Plus, Pencil, Archive, RotateCcw, Users, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -265,12 +266,176 @@ function AddBookDialog({ open, onClose, onSave }: AddBookDialogProps) {
   );
 }
 
+interface BulkUploadDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onUpload: (books: Book[]) => void;
+}
+
+function BulkUploadDialog({ open, onClose, onUpload }: BulkUploadDialogProps) {
+  const [bookNames, setBookNames] = useState('');
+  const [desk, setDesk] = useState(desks[0]);
+  const [primaryTrader, setPrimaryTrader] = useState('');
+  const [secondaryTrader, setSecondaryTrader] = useState('');
+  const [deskHead, setDeskHead] = useState('');
+  const [productController, setProductController] = useState('');
+
+  const traders = mockUsers.filter(u => u.role === 'trader');
+  const deskHeadsUsers = mockUsers.filter(u => u.role === 'desk_head');
+  const controllers = mockUsers.filter(u => u.role === 'product_controller');
+
+  const handleUpload = () => {
+    const names = bookNames
+      .split('\n')
+      .map(n => n.trim())
+      .filter(n => n.length > 0);
+
+    if (names.length === 0) {
+      toast.error('Please enter at least one book name');
+      return;
+    }
+
+    if (!primaryTrader || !secondaryTrader || !deskHead || !productController) {
+      toast.error('Please assign all team members');
+      return;
+    }
+
+    const workingDays = getLastWorkingDays(10);
+    const newBooks: Book[] = names.map((name, idx) => ({
+      id: `book-bulk-${Date.now()}-${idx}`,
+      name,
+      desk,
+      primaryTrader,
+      secondaryTrader,
+      deskHead,
+      productController,
+      isRetired: true,
+      signOffs: workingDays.map((date) => ({
+        date,
+        status: 'signed' as const,
+        signedBy: 'Auto-signed',
+        signedAt: '09:45',
+      })),
+      comments: [],
+    }));
+
+    onUpload(newBooks);
+    toast.success(`${names.length} retired books added successfully`);
+    setBookNames('');
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-card border-border max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5 text-primary" />
+            Bulk Upload Retired Books
+          </DialogTitle>
+          <DialogDescription>
+            Enter book names (one per line) to add them as retired books.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Book Names (one per line)</Label>
+            <Textarea
+              value={bookNames}
+              onChange={(e) => setBookNames(e.target.value)}
+              placeholder="Book 1&#10;Book 2&#10;Book 3"
+              className="bg-muted/30 min-h-[120px]"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Desk</Label>
+            <Select value={desk} onValueChange={setDesk}>
+              <SelectTrigger className="bg-muted/30">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {desks.map(d => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Primary Trader</Label>
+              <Select value={primaryTrader} onValueChange={setPrimaryTrader}>
+                <SelectTrigger className="bg-muted/30">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {traders.map(t => (
+                    <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Secondary Trader</Label>
+              <Select value={secondaryTrader} onValueChange={setSecondaryTrader}>
+                <SelectTrigger className="bg-muted/30">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {traders.map(t => (
+                    <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Desk Head</Label>
+              <Select value={deskHead} onValueChange={setDeskHead}>
+                <SelectTrigger className="bg-muted/30">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {deskHeadsUsers.map(t => (
+                    <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Product Controller</Label>
+              <Select value={productController} onValueChange={setProductController}>
+                <SelectTrigger className="bg-muted/30">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {controllers.map(t => (
+                    <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleUpload} className="gap-2">
+            <Upload className="h-4 w-4" />
+            Upload Books
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function BookListPage() {
   const [books, setBooks] = useState<Book[]>(mockBooks);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDesk, setSelectedDesk] = useState('all');
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
 
   // Active books filtered
   const filteredBooks = useMemo(() => {
@@ -306,6 +471,10 @@ export function BookListPage() {
 
   const handleAddBook = (newBook: Book) => {
     setBooks(prev => [...prev, newBook]);
+  };
+
+  const handleBulkUpload = (newBooks: Book[]) => {
+    setBooks(prev => [...prev, ...newBooks]);
   };
 
   const handleToggleRetire = (book: Book) => {
@@ -498,6 +667,12 @@ export function BookListPage() {
         </TabsContent>
 
         <TabsContent value="retired" className="space-y-6">
+          <div className="flex justify-end">
+            <Button variant="outline" className="gap-2" onClick={() => setIsBulkUploadOpen(true)}>
+              <Upload className="h-4 w-4" />
+              Bulk Upload Retired Books
+            </Button>
+          </div>
           {retiredBooks.length > 0 ? (
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               <Table>
@@ -605,6 +780,13 @@ export function BookListPage() {
           onSave={handleUpdateBook}
         />
       )}
+
+      {/* Bulk Upload Dialog */}
+      <BulkUploadDialog
+        open={isBulkUploadOpen}
+        onClose={() => setIsBulkUploadOpen(false)}
+        onUpload={handleBulkUpload}
+      />
     </div>
   );
 }
