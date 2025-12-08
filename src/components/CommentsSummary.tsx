@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Book, BookComment, formatWorkingDay, currentUser } from '@/lib/mockData';
+import { Book, BookComment, formatWorkingDay } from '@/lib/mockData';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -7,6 +7,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { MessageSquare, User, Calendar, ChevronRight, Reply, Send, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { useRole } from '@/contexts/RoleContext';
 
 interface CommentsSummaryProps {
   books: Book[];
@@ -15,6 +16,7 @@ interface CommentsSummaryProps {
 }
 
 export function CommentsSummary({ books, onBookClick, onUpdateBook }: CommentsSummaryProps) {
+  const { activeUser } = useRole();
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
 
@@ -126,14 +128,14 @@ export function CommentsSummary({ books, onBookClick, onUpdateBook }: CommentsSu
   };
 
   const handleReply = (comment: BookComment & { bookName: string; book: Book }) => {
-    if (!replyContent.trim() || !onUpdateBook) return;
+    if (!replyContent.trim() || !onUpdateBook || !activeUser) return;
 
     const reply: BookComment = {
       id: `comment-${Date.now()}`,
       bookId: comment.book.id,
       date: comment.date,
-      authorName: currentUser.name,
-      authorRole: 'product_controller',
+      authorName: activeUser.name,
+      authorRole: activeUser.role,
       content: replyContent.trim(),
       createdAt: new Date().toISOString(),
       parentId: comment.id,
@@ -300,7 +302,7 @@ export function CommentsSummary({ books, onBookClick, onUpdateBook }: CommentsSu
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center gap-2">
-                      <div className={cn("flex h-5 w-5 items-center justify-center rounded-full", getRoleColor('product_controller'))}>
+                      <div className={cn("flex h-5 w-5 items-center justify-center rounded-full", getRoleColor(activeUser?.role || 'product_controller'))}>
                         <User className="h-2.5 w-2.5" />
                       </div>
                       <span className="text-xs text-muted-foreground">

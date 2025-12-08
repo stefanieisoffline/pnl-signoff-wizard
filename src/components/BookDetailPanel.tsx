@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Check, X, MessageSquare, Archive, UserCog, Clock, User, Send, Reply, Calendar, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { currentUser } from '@/lib/mockData';
+import { useRole } from '@/contexts/RoleContext';
 import { cn } from '@/lib/utils';
 
 interface BookDetailPanelProps {
@@ -22,6 +22,7 @@ interface BookDetailPanelProps {
 }
 
 export function BookDetailPanel({ book, open, onClose, onUpdateBook, selectedDate }: BookDetailPanelProps) {
+  const { activeUser } = useRole();
   const [comment, setComment] = useState('');
   const [selectedController, setSelectedController] = useState('');
   const [activeTab, setActiveTab] = useState('signoff');
@@ -86,14 +87,14 @@ export function BookDetailPanel({ book, open, onClose, onUpdateBook, selectedDat
   };
 
   const handleAddComment = () => {
-    if (!newComment.trim() || !dateFilteredView) return;
+    if (!newComment.trim() || !dateFilteredView || !activeUser) return;
 
     const commentObj: BookComment = {
       id: `comment-${Date.now()}`,
       bookId: book.id,
       date: dateFilteredView,
-      authorName: currentUser.name,
-      authorRole: 'product_controller',
+      authorName: activeUser.name,
+      authorRole: activeUser.role,
       content: newComment.trim(),
       createdAt: new Date().toISOString(),
     };
@@ -107,14 +108,14 @@ export function BookDetailPanel({ book, open, onClose, onUpdateBook, selectedDat
   };
 
   const handleReply = (parentId: string, parentDate: string) => {
-    if (!replyContent.trim()) return;
+    if (!replyContent.trim() || !activeUser) return;
 
     const reply: BookComment = {
       id: `comment-${Date.now()}`,
       bookId: book.id,
       date: parentDate,
-      authorName: currentUser.name,
-      authorRole: 'product_controller',
+      authorName: activeUser.name,
+      authorRole: activeUser.role,
       content: replyContent.trim(),
       createdAt: new Date().toISOString(),
       parentId,
@@ -434,14 +435,14 @@ export function BookDetailPanel({ book, open, onClose, onUpdateBook, selectedDat
               )}
 
               {/* Add comment for filtered date */}
-              {dateFilteredView && (
+              {dateFilteredView && activeUser && (
                 <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className={cn("flex h-6 w-6 items-center justify-center rounded-full", getRoleColor('product_controller'))}>
+                    <div className={cn("flex h-6 w-6 items-center justify-center rounded-full", getRoleColor(activeUser.role))}>
                       <User className="h-3 w-3" />
                     </div>
-                    <span className="text-sm font-medium text-foreground">{currentUser.name}</span>
-                    <Badge variant="default" className="text-[10px]">PC</Badge>
+                    <span className="text-sm font-medium text-foreground">{activeUser.name}</span>
+                    <Badge variant={getRoleBadgeVariant(activeUser.role)} className="text-[10px]">{getRoleLabel(activeUser.role)}</Badge>
                   </div>
                   <Textarea
                     placeholder={`Add a comment for ${formatWorkingDay(dateFilteredView)}...`}
@@ -482,7 +483,7 @@ export function BookDetailPanel({ book, open, onClose, onUpdateBook, selectedDat
                       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                       .map((commentItem) => {
                         const replies = getReplies(commentItem.id);
-                        const isOwnComment = commentItem.authorName === currentUser.name;
+                        const isOwnComment = activeUser && commentItem.authorName === activeUser.name;
                         
                         return (
                           <div key={commentItem.id} className="space-y-2">
@@ -534,7 +535,7 @@ export function BookDetailPanel({ book, open, onClose, onUpdateBook, selectedDat
                             {replyingTo === commentItem.id && (
                               <div className="ml-8 space-y-2 animate-in slide-in-from-top-2 duration-200">
                                 <div className="flex items-center gap-2">
-                                  <div className={cn("flex h-5 w-5 items-center justify-center rounded-full", getRoleColor('product_controller'))}>
+                                  <div className={cn("flex h-5 w-5 items-center justify-center rounded-full", getRoleColor(activeUser?.role || 'product_controller'))}>
                                     <User className="h-2.5 w-2.5" />
                                   </div>
                                   <span className="text-xs text-muted-foreground">Replying to {commentItem.authorName}</span>
@@ -574,7 +575,7 @@ export function BookDetailPanel({ book, open, onClose, onUpdateBook, selectedDat
                             {replies.length > 0 && (
                               <div className="ml-8 space-y-2 border-l-2 border-border pl-3">
                                 {replies.map((reply) => {
-                                  const isOwnReply = reply.authorName === currentUser.name;
+                                  const isOwnReply = activeUser && reply.authorName === activeUser.name;
                                   return (
                                     <div
                                       key={reply.id}
