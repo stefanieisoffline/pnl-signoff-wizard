@@ -273,12 +273,14 @@ interface BulkUploadDialogProps {
 }
 
 function BulkUploadDialog({ open, onClose, onUpload }: BulkUploadDialogProps) {
+  const [bookEntries, setBookEntries] = useState<{ name: string; desk: string }[]>([]);
   const [bookNames, setBookNames] = useState('');
-  const [desk, setDesk] = useState(desks[0]);
+  const [defaultDesk, setDefaultDesk] = useState(desks[0]);
   const [primaryTrader, setPrimaryTrader] = useState('');
   const [secondaryTrader, setSecondaryTrader] = useState('');
   const [deskHead, setDeskHead] = useState('');
   const [productController, setProductController] = useState('');
+  const [hasDesksFromCSV, setHasDesksFromCSV] = useState(false);
 
   const traders = mockUsers.filter(u => u.role === 'trader');
   const deskHeadsUsers = mockUsers.filter(u => u.role === 'desk_head');
@@ -297,22 +299,37 @@ function BulkUploadDialog({ open, onClose, onUpload }: BulkUploadDialogProps) {
     reader.onload = (event) => {
       const content = event.target?.result as string;
       if (file.name.endsWith('.csv')) {
-        // Parse CSV - extract first column (book names)
-        const lines = content.split('\n');
-        const names = lines
-          .map(line => {
-            // Handle quoted values and commas
-            const match = line.match(/^"?([^",]+)"?/);
-            return match ? match[1].trim() : line.split(',')[0]?.trim();
-          })
-          .filter(n => n && n.length > 0 && n.toLowerCase() !== 'book name' && n.toLowerCase() !== 'name');
-        setBookNames(names.join('\n'));
-        toast.success(`Loaded ${names.length} book names from CSV`);
+        // Parse CSV - extract book name and desk columns
+        const lines = content.split('\n').filter(line => line.trim());
+        const entries: { name: string; desk: string }[] = [];
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const parts = line.split(',').map(p => p.trim().replace(/^["﻿]+|["]+$/g, ''));
+          const name = parts[0]?.trim();
+          const desk = parts[1]?.trim();
+          
+          // Skip header row
+          if (i === 0 && (name?.toLowerCase().includes('book') || name?.toLowerCase() === 'name')) {
+            continue;
+          }
+          
+          if (name && name.length > 0) {
+            entries.push({ name, desk: desk || defaultDesk });
+          }
+        }
+        
+        setBookEntries(entries);
+        setBookNames(entries.map(e => `${e.name} | ${e.desk}`).join('\n'));
+        setHasDesksFromCSV(entries.some(e => e.desk && e.desk !== defaultDesk));
+        toast.success(`Loaded ${entries.length} books from CSV`);
       } else {
-        // Plain text file
-        setBookNames(content);
-        const count = content.split('\n').filter(n => n.trim()).length;
-        toast.success(`Loaded ${count} book names from file`);
+        // Plain text file - no desk info
+        const names = content.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+        setBookEntries(names.map(name => ({ name, desk: defaultDesk })));
+        setBookNames(names.join('\n'));
+        setHasDesksFromCSV(false);
+        toast.success(`Loaded ${names.length} book names from file`);
       }
     };
     reader.readAsText(file);
@@ -320,13 +337,16 @@ function BulkUploadDialog({ open, onClose, onUpload }: BulkUploadDialogProps) {
   };
 
   const handleUpload = () => {
-    const names = bookNames
-      .split('\n')
-      .map(n => n.trim())
-      .filter(n => n.length > 0);
+    let entriesToUpload = bookEntries;
+    
+    // If manually edited or no CSV loaded, parse from text
+    if (entriesToUpload.length === 0) {
+      const names = bookNames.split('\n').map(n => n.trim()).filter(n => n.length > 0);
+      entriesToUpload = names.map(name => ({ name, desk: defaultDesk }));
+    }
 
-    if (names.length === 0) {
-      toast.error('Please enter at least one book name');
+    if (entriesToUpload.length === 0) {
+      toast.error('Please enter at least one book name or upload a file');
       return;
     }
 
@@ -336,10 +356,10 @@ function BulkUploadDialog({ open, onClose, onUpload }: BulkUploadDialogProps) {
     }
 
     const workingDays = getLastWorkingDays(10);
-    const newBooks: Book[] = names.map((name, idx) => ({
+    const newBooks: Book[] = entriesToUpload.map((entry, idx) => ({
       id: `book-bulk-${Date.now()}-${idx}`,
-      name,
-      desk,
+      name: entry.name,
+      desk: entry.desk || defaultDesk,
       primaryTrader,
       secondaryTrader,
       deskHead,
@@ -355,27 +375,32 @@ function BulkUploadDialog({ open, onClose, onUpload }: BulkUploadDialogProps) {
     }));
 
     onUpload(newBooks);
-    toast.success(`${names.length} retired books added successfully`);
+    toast.success(`${entriesToUpload.length} retired books added successfully`);
     setBookNames('');
+    setBookEntries([]);
+    setHasDesksFromCSV(false);
     onClose();
   };
 
+  // Get unique desks from loaded entries
+  const loadedDesks = [...new Set(bookEntries.map(e => e.desk).filter(Boolean))];
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-card border-border max-w-lg">
+      <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5 text-primary" />
             Bulk Upload Retired Books
           </DialogTitle>
           <DialogDescription>
-            Enter book names (one per line) or upload a CSV/TXT file.
+            Upload a CSV file with "Book Name" and "Desk" columns, or enter names manually.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Book Names (one per line)</Label>
+              <Label>Book Data {hasDesksFromCSV && <Badge variant="secondary" className="ml-2 text-xs">Desks loaded from CSV</Badge>}</Label>
               <label className="cursor-pointer">
                 <input
                   type="file"
@@ -391,27 +416,54 @@ function BulkUploadDialog({ open, onClose, onUpload }: BulkUploadDialogProps) {
             </div>
             <Textarea
               value={bookNames}
-              onChange={(e) => setBookNames(e.target.value)}
-              placeholder="Book 1&#10;Book 2&#10;Book 3&#10;&#10;Or upload a CSV/TXT file"
-              className="bg-muted/30 min-h-[120px]"
+              onChange={(e) => {
+                setBookNames(e.target.value);
+                setBookEntries([]); // Clear parsed entries when manually editing
+                setHasDesksFromCSV(false);
+              }}
+              placeholder="Upload a CSV file or enter book names (one per line)"
+              className="bg-muted/30 min-h-[120px] font-mono text-sm"
+              readOnly={bookEntries.length > 0}
             />
-            <p className="text-xs text-muted-foreground">
-              CSV files: first column will be used as book names
-            </p>
+            {bookEntries.length > 0 && (
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{bookEntries.length} books loaded • Desks: {loadedDesks.join(', ')}</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 text-xs"
+                  onClick={() => {
+                    setBookEntries([]);
+                    setBookNames('');
+                    setHasDesksFromCSV(false);
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
+            {!hasDesksFromCSV && bookEntries.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                CSV format: Book Name, Desk (e.g., "AB_GAS_UK, Gas")
+              </p>
+            )}
           </div>
-          <div className="space-y-2">
-            <Label>Desk</Label>
-            <Select value={desk} onValueChange={setDesk}>
-              <SelectTrigger className="bg-muted/30">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {desks.map(d => (
-                  <SelectItem key={d} value={d}>{d}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          
+          {!hasDesksFromCSV && (
+            <div className="space-y-2">
+              <Label>Default Desk (for books without desk in CSV)</Label>
+              <Select value={defaultDesk} onValueChange={setDefaultDesk}>
+                <SelectTrigger className="bg-muted/30">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {desks.map(d => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Primary Trader</Label>
@@ -473,7 +525,7 @@ function BulkUploadDialog({ open, onClose, onUpload }: BulkUploadDialogProps) {
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleUpload} className="gap-2">
             <Upload className="h-4 w-4" />
-            Upload Books
+            Upload {bookEntries.length > 0 ? `${bookEntries.length} Books` : 'Books'}
           </Button>
         </div>
       </DialogContent>
