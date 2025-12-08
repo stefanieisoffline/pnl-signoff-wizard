@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Book, getLastWorkingDays, formatWorkingDay, BookComment } from '@/lib/mockData';
 import { StatusBadge } from './StatusBadge';
 import { Button } from './ui/button';
-import { Check, X, User, MessageSquare, Send } from 'lucide-react';
+import { Check, X, User, MessageSquare, Send, Reply } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Textarea } from './ui/textarea';
 import { toast } from '@/hooks/use-toast';
+import { useRole } from '@/contexts/RoleContext';
 
 interface TraderSignOffGridProps {
   books: Book[];
@@ -17,9 +18,17 @@ interface TraderSignOffGridProps {
 }
 
 export function TraderSignOffGrid({ books, onBookClick, onUpdateBook, traderName, daysToShow = 5 }: TraderSignOffGridProps) {
+  const { activeUser } = useRole();
   const workingDays = getLastWorkingDays(daysToShow);
   const [openPopover, setOpenPopover] = useState<string | null>(null);
   const [comment, setComment] = useState('');
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+
+  const getTraderRole = (book: Book): 'trader' | 'desk_head' => {
+    if (book.deskHead === traderName) return 'desk_head';
+    return 'trader';
+  };
 
   const handleSignOff = (book: Book, date: string, action: 'sign' | 'reject') => {
     const updatedSignOffs = book.signOffs.map(s =>
@@ -40,8 +49,8 @@ export function TraderSignOffGrid({ books, onBookClick, onUpdateBook, traderName
         id: `comment-${Date.now()}`,
         bookId: book.id,
         date,
-        authorName: traderName,
-        authorRole: book.deskHead === traderName ? 'desk_head' : 'trader',
+        authorName: activeUser?.name || traderName,
+        authorRole: activeUser?.role || getTraderRole(book),
         content: comment.trim(),
         createdAt: new Date().toISOString(),
       };
@@ -56,6 +65,34 @@ export function TraderSignOffGrid({ books, onBookClick, onUpdateBook, traderName
       title: action === 'sign' ? 'Report Signed' : 'Report Rejected',
       description: `${book.name} - ${formatWorkingDay(date)}`,
       variant: action === 'sign' ? 'default' : 'destructive',
+    });
+  };
+
+  const handleReply = (book: Book, parentComment: BookComment) => {
+    if (!replyContent.trim() || !activeUser) return;
+
+    const reply: BookComment = {
+      id: `comment-${Date.now()}`,
+      bookId: book.id,
+      date: parentComment.date,
+      authorName: activeUser.name,
+      authorRole: activeUser.role,
+      content: replyContent.trim(),
+      createdAt: new Date().toISOString(),
+      parentId: parentComment.id,
+    };
+
+    onUpdateBook({
+      ...book,
+      comments: [...book.comments, reply],
+    });
+    
+    setReplyContent('');
+    setReplyingTo(null);
+    
+    toast({
+      title: 'Reply Sent',
+      description: `Reply posted on ${book.name}`,
     });
   };
 
@@ -219,13 +256,92 @@ export function TraderSignOffGrid({ books, onBookClick, onUpdateBook, traderName
                                 <p className="text-xs font-medium text-muted-foreground mb-2">
                                   Comments ({commentsForDate.length})
                                 </p>
-                                <div className="space-y-2 max-h-32 overflow-y-auto">
-                                  {commentsForDate.map(c => (
-                                    <div key={c.id} className="text-xs bg-muted/50 rounded p-2">
-                                      <span className="font-medium">{c.authorName}</span>
-                                      <p className="text-muted-foreground mt-0.5">{c.content}</p>
-                                    </div>
-                                  ))}
+                                <div className="space-y-2 max-h-40 overflow-y-auto">
+                                  {commentsForDate.filter(c => !c.parentId).map(c => {
+                                    const replies = commentsForDate.filter(r => r.parentId === c.id);
+                                    const isReplying = replyingTo === c.id;
+                                    
+                                    return (
+                                      <div key={c.id} className="space-y-1">
+                                        <div className="text-xs bg-muted/50 rounded p-2">
+                                          <div className="flex items-center justify-between">
+                                            <span className="font-medium">{c.authorName}</span>
+                                            <Badge variant="outline" className="text-[9px] px-1 py-0">
+                                              {c.authorRole === 'product_controller' ? 'PC' : c.authorRole === 'desk_head' ? 'DH' : 'Trader'}
+                                            </Badge>
+                                          </div>
+                                          <p className="text-muted-foreground mt-0.5">{c.content}</p>
+                                          {c.authorName !== activeUser?.name && (
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-5 px-1 text-[10px] gap-1 mt-1 text-muted-foreground hover:text-foreground"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setReplyingTo(isReplying ? null : c.id);
+                                                setReplyContent('');
+                                              }}
+                                            >
+                                              <Reply className="h-2.5 w-2.5" />
+                                              Reply
+                                            </Button>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Replies */}
+                                        {replies.length > 0 && (
+                                          <div className="ml-3 space-y-1 border-l-2 border-border pl-2">
+                                            {replies.map(r => (
+                                              <div key={r.id} className="text-xs bg-muted/30 rounded p-1.5">
+                                                <span className="font-medium">{r.authorName}</span>
+                                                <p className="text-muted-foreground mt-0.5">{r.content}</p>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Reply input */}
+                                        {isReplying && (
+                                          <div className="ml-3 space-y-1.5 animate-in slide-in-from-top-1 duration-150">
+                                            <Textarea
+                                              placeholder="Write a reply..."
+                                              value={replyContent}
+                                              onChange={(e) => setReplyContent(e.target.value)}
+                                              className="min-h-[50px] text-xs"
+                                              autoFocus
+                                              onClick={(e) => e.stopPropagation()}
+                                            />
+                                            <div className="flex gap-1">
+                                              <Button
+                                                size="sm"
+                                                className="h-6 text-xs gap-1"
+                                                disabled={!replyContent.trim()}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleReply(book, c);
+                                                }}
+                                              >
+                                                <Send className="h-2.5 w-2.5" />
+                                                Send
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 text-xs"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setReplyingTo(null);
+                                                  setReplyContent('');
+                                                }}
+                                              >
+                                                Cancel
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             )}
