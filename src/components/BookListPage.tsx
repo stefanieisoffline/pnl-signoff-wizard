@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Plus, Pencil, Archive, RotateCcw, Users, Upload } from 'lucide-react';
+import { Search, Plus, Pencil, Archive, RotateCcw, Users, Upload, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -284,6 +284,41 @@ function BulkUploadDialog({ open, onClose, onUpload }: BulkUploadDialogProps) {
   const deskHeadsUsers = mockUsers.filter(u => u.role === 'desk_head');
   const controllers = mockUsers.filter(u => u.role === 'product_controller');
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv') && !file.name.endsWith('.txt')) {
+      toast.error('Please upload a CSV or TXT file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (file.name.endsWith('.csv')) {
+        // Parse CSV - extract first column (book names)
+        const lines = content.split('\n');
+        const names = lines
+          .map(line => {
+            // Handle quoted values and commas
+            const match = line.match(/^"?([^",]+)"?/);
+            return match ? match[1].trim() : line.split(',')[0]?.trim();
+          })
+          .filter(n => n && n.length > 0 && n.toLowerCase() !== 'book name' && n.toLowerCase() !== 'name');
+        setBookNames(names.join('\n'));
+        toast.success(`Loaded ${names.length} book names from CSV`);
+      } else {
+        // Plain text file
+        setBookNames(content);
+        const count = content.split('\n').filter(n => n.trim()).length;
+        toast.success(`Loaded ${count} book names from file`);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset input
+  };
+
   const handleUpload = () => {
     const names = bookNames
       .split('\n')
@@ -334,18 +369,35 @@ function BulkUploadDialog({ open, onClose, onUpload }: BulkUploadDialogProps) {
             Bulk Upload Retired Books
           </DialogTitle>
           <DialogDescription>
-            Enter book names (one per line) to add them as retired books.
+            Enter book names (one per line) or upload a CSV/TXT file.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Book Names (one per line)</Label>
+            <div className="flex items-center justify-between">
+              <Label>Book Names (one per line)</Label>
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept=".csv,.txt"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <span className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                  <FileUp className="h-4 w-4" />
+                  Upload File
+                </span>
+              </label>
+            </div>
             <Textarea
               value={bookNames}
               onChange={(e) => setBookNames(e.target.value)}
-              placeholder="Book 1&#10;Book 2&#10;Book 3"
+              placeholder="Book 1&#10;Book 2&#10;Book 3&#10;&#10;Or upload a CSV/TXT file"
               className="bg-muted/30 min-h-[120px]"
             />
+            <p className="text-xs text-muted-foreground">
+              CSV files: first column will be used as book names
+            </p>
           </div>
           <div className="space-y-2">
             <Label>Desk</Label>
